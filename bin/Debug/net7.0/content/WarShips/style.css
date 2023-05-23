@@ -1,0 +1,89 @@
+table {
+    width: 45%;
+    border-collapse: collapse;
+    position: relative;
+}
+
+td {
+    border: 1px solid black;
+}
+
+td {
+    width: 9.1%;
+    height: 9.1%;
+}
+
+img {
+    position: absolute;
+    width: 100%;
+    height: 100%;
+    z-index: 10;
+}
+
+.enemyBlock {
+    width: 100%;
+    height: 100%;
+    position: relative;
+}
+
+.myBlock {
+    width: 100%;
+    height: 100%;
+    position: relative;
+}
+
+.button {
+    z-index: 100;
+    width: 100%;
+    height: 100%;
+    position: absolute;
+    border: 0px;
+    background-color: aqua;
+}
+
+.borderNone {
+    border: 0px;
+}
+
+div {
+    position: absolute;
+}
+
+#start {
+    border-radius: 100%;
+    background-color: aqua;
+    width: 5%;
+    margin-left: 58.5%;
+    margin-top: 2%;
+    position: relative;
+    border: 0px;
+}
+
+#darker {
+    position: absolute;
+    height: 100%;
+    width: 100%;
+    background-color: rgba(0, 0, 0, 60%);
+    z-index: 100000;
+}
+
+p {
+    color: black;
+    font-family: 'Courier New', Courier, monospace;
+    margin-left: 5%;
+    position: absolute;
+    width: 90%;
+    word-wrap: break-word;
+}
+
+#darkerWriter {
+    color: aliceblue;
+    margin-left: 44%;
+    margin-top: 20%;
+}
+
+.WarShip {
+    height: 0px;
+    width: 0px;
+    z-index: 10;
+}

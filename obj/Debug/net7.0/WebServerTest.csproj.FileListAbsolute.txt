@@ -1,0 +1,15 @@
+/Users/emac/Documents/VSCode/WebServerTest/bin/Debug/net7.0/WebServerTest
+/Users/emac/Documents/VSCode/WebServerTest/bin/Debug/net7.0/WebServerTest.deps.json
+/Users/emac/Documents/VSCode/WebServerTest/bin/Debug/net7.0/WebServerTest.runtimeconfig.json
+/Users/emac/Documents/VSCode/WebServerTest/bin/Debug/net7.0/WebServerTest.dll
+/Users/emac/Documents/VSCode/WebServerTest/bin/Debug/net7.0/WebServerTest.pdb
+/Users/emac/Documents/VSCode/WebServerTest/obj/Debug/net7.0/WebServerTest.csproj.AssemblyReference.cache
+/Users/emac/Documents/VSCode/WebServerTest/obj/Debug/net7.0/WebServerTest.GeneratedMSBuildEditorConfig.editorconfig
+/Users/emac/Documents/VSCode/WebServerTest/obj/Debug/net7.0/WebServerTest.AssemblyInfoInputs.cache
+/Users/emac/Documents/VSCode/WebServerTest/obj/Debug/net7.0/WebServerTest.AssemblyInfo.cs
+/Users/emac/Documents/VSCode/WebServerTest/obj/Debug/net7.0/WebServerTest.csproj.CoreCompileInputs.cache
+/Users/emac/Documents/VSCode/WebServerTest/obj/Debug/net7.0/WebServerTest.dll
+/Users/emac/Documents/VSCode/WebServerTest/obj/Debug/net7.0/refint/WebServerTest.dll
+/Users/emac/Documents/VSCode/WebServerTest/obj/Debug/net7.0/WebServerTest.pdb
+/Users/emac/Documents/VSCode/WebServerTest/obj/Debug/net7.0/WebServerTest.genruntimeconfig.cache
+/Users/emac/Documents/VSCode/WebServerTest/obj/Debug/net7.0/ref/WebServerTest.dll

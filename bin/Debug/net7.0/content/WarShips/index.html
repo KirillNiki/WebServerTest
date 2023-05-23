@@ -1,0 +1,51 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <title>WarShips</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+
+<body style="background-color: rgb(12, 67, 88);">
+    <main id="main">
+        <div id="darker" style="margin-top: -50px; margin-left: -8px;visibility: hidden;">
+            <p id="darkerWriter"></p>
+        </div>
+        <div id="timeOut" style="margin-top: -200px; margin-left: -8px;visibility: hidden;">
+        </div>
+
+        <p id="text"
+            style="background-color:aqua;width: 80%;margin-left: 10%;margin-top: 50px;border-radius: 20%;position: relative;padding-top: 2%;padding-left: 2%;padding-right: 2%;padding-bottom: 2%;">
+            click on a ship and drag it. while dragging press 'r' to rotate a ship. press 'start button' after distributing all ships to start the game. click on any cell to attack
+        </p>
+
+        <img src="sprites/oneBlockShip.png" id="oneBlockShip0" class="WarShip">
+        <img src="sprites/oneBlockShip.png" id="oneBlockShip1" class="WarShip">
+        <img src="sprites/oneBlockShip.png" id="oneBlockShip2" class="WarShip">
+        <img src="sprites/oneBlockShip.png" id="oneBlockShip3" class="WarShip">
+        <img src="sprites/twoBlockShip.png" id="twoBlockShip4" class="WarShip">
+        <img src="sprites/twoBlockShip.png" id="twoBlockShip5" class="WarShip">
+        <img src="sprites/twoBlockShip.png" id="twoBlockShip6" class="WarShip">
+        <img src="sprites/threeBlockShip.png" id="threeBlockShip7" class="WarShip">
+        <img src="sprites/threeBlockShip.png" id="threeBlockShip8" class="WarShip">
+        <img src="sprites/fourBlockShip.png" id="fourBlockShip9" class="WarShip">
+        <div id="mainBlock"
+            style="background-color:aqua;width: 60%;margin-left: 30%;margin-top: 60px;border-radius: 10%;position: relative;">
+            <table id="myField" style="margin-left: 3%;">
+                <tbody id="myFieldBody">
+                </tbody>
+            </table>
+
+            <table id="enemyField" style="margin-left: 51%;">
+                <tbody id="enemyFieldBody">
+                </tbody>
+            </table>
+        </div>
+        <button id="start" onclick="StartEndGame(this)">start</button>
+    </main>
+    <script src="onStart.js"></script>
+    <script src="play.js"></script>
+</body>
+
+</html>
