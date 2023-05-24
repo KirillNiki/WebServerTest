@@ -8,19 +8,23 @@ let AllEnemyCells = document.getElementsByClassName(`enemyBlock`);
 let CellsToChose = new Array(100);
 let isBotPlay = false;
 
+var playerId;
 
 
 function StartGame() {
     let AllButtons = document.getElementsByClassName(`button`);
-    var response;
 
     if (isBotPlay) {
         EnemyesFieldInit();
     }
     else {
-        var request = 'enemyMatrix.json'; // to change
-        var clientResponse = JSON.stringify(MyFieldMatrix);
-        response = JSON.parse(SendAjaxRequest(request, clientResponse));
+        var request = 'getPlayerId';
+        playerId = JSON.parse(SendAjaxRequest(request, clientResponse));
+
+        request = 'getEnemyMatrix';
+        var clientResponseInfo = { playerId: playerId, fieldMatrix: MyFieldMatrix };
+        var clientResponse = JSON.stringify(clientResponseInfo);
+        EnemyFieldMatrix = JSON.parse(SendAjaxRequest(request, clientResponse)).fieldMatrix;
     }
 
 
@@ -31,10 +35,15 @@ function StartGame() {
 
 
 
-async function SendAjaxRequest(requestURl, clientResponse) {
-    let responde = await fetch(requestURl, clientResponse);
+async function SendAjaxRequest(requestURl, clientResponse = -1) {
+    let responde;
+    if (clientResponse != -1)
+        responde = await fetch(requestURl, clientResponse);
+    else
+        responde = await fetch(requestURl);
+
     let returned = await responde.json();
-    
+
     return returned;
 }
 
@@ -53,8 +62,8 @@ function ButtonPressed(event) {
     let y = parent.y;
     let x = parent.x;
 
-    var clickedCell = { y: y, x: x};
-    fetch('clickedCell', JSON.stringify(clickedCell)); // clickedCell
+    var clickedCell = { y: y, x: x };
+    fetch('clickedCellByMe', JSON.stringify(clickedCell)); // clickedCell
 
     switch (EnemyFieldMatrix[x][y]) {
         case States.ship:
@@ -86,7 +95,7 @@ function ButtonPressed(event) {
             if (isBotPlay)
                 ComputerMove();
             else {
-
+                fetch
             }
 
             break;
