@@ -8,6 +8,8 @@ using System.Net.Sockets;
 
 class Server
 {
+    public static string onlineFilePath = "online.json";
+
     public EndPoint IP { get { return ip; } }
     private EndPoint ip;
 
@@ -20,6 +22,16 @@ class Server
     private Socket socketListener;
     private volatile CancellationTokenSource cancellationToken;
     private Thread AcceptEventThread;
+    
+    
+    public static int currentPlayerIndex = 0;
+
+    public class CurrentPlayerIndex
+    {
+        public int currentPlayerIndex {get; set;}
+    }
+
+
 
 
 

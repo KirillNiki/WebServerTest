@@ -1,9 +1,7 @@
-window.addEventListener('load', EnemyMatrixInit);
-
 let enemyShipsCount = 10;
 let myShipsCount = 10;
 
-const EnemyFieldMatrix = new Array(10);
+let EnemyFieldMatrix = new Array(10);
 let AllEnemyCells = document.getElementsByClassName(`enemyBlock`);
 let CellsToChose = new Array(100);
 let isBotPlay = false;
@@ -11,7 +9,7 @@ let isBotPlay = false;
 var playerId;
 
 
-function StartGame() {
+async function StartGame() {
     let AllButtons = document.getElementsByClassName(`button`);
 
     if (isBotPlay) {
@@ -19,12 +17,13 @@ function StartGame() {
     }
     else {
         var request = 'getPlayerId';
-        playerId = JSON.parse(SendAjaxRequest(request, clientResponse));
+        playerId = await SendAjaxRequest(request);
 
         request = 'getEnemyMatrix';
-        var clientResponseInfo = { playerId: playerId, fieldMatrix: MyFieldMatrix };
+        var clientResponseInfo = { playerId: playerId.currentPlayerIndex, fieldMatrix: MyFieldMatrix };
         var clientResponse = JSON.stringify(clientResponseInfo);
-        EnemyFieldMatrix = JSON.parse(SendAjaxRequest(request, clientResponse)).fieldMatrix;
+        var returned = await SendAjaxRequest(request, clientResponse);
+        EnemyFieldMatrix = returned.fieldMatrix;
     }
 
 
@@ -36,15 +35,14 @@ function StartGame() {
 
 
 async function SendAjaxRequest(requestURl, clientResponse = -1) {
-    let responde;
+    var responde;
     if (clientResponse != -1)
-        responde = await fetch(requestURl, clientResponse);
+        responde = await fetch(`${requestURl}/${clientResponse}`);
     else
         responde = await fetch(requestURl);
 
-    let returned = await responde.json();
-
-    return returned;
+    var returned = await responde.text();
+    return JSON.parse(returned);
 }
 
 

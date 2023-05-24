@@ -7,6 +7,9 @@ using System.Text;
 using System.Net.Sockets;
 using System.Text.RegularExpressions;
 
+using System.Text.Json;
+
+
 class Client
 {
     Socket client;
@@ -38,15 +41,44 @@ class Client
             return;
         }
 
+
         if (File.Exists(Headers.RealPath))
         {
             GetSheet();
+        }
+        else if(Headers.File == "/content/WarShips/getPlayerId")
+        {
+            string jsonId = JsonSerializer.Serialize(new Server.CurrentPlayerIndex { currentPlayerIndex = Server.currentPlayerIndex });
+            Server.currentPlayerIndex++;
+            byte[] bytes = Encoding.UTF8.GetBytes(jsonId);
+
+            SendFileHeader("json", bytes.Length);
+            client.Send(bytes, bytes.Length, SocketFlags.None);
+        }
+        else if(Headers.File.Substring(0, ("/content/WarShips/getEnemyMatrix").Length) == "/content/WarShips/getEnemyMatrix")
+        {
+            var playerInfo = Headers.File.Substring(("/content/WarShips/getEnemyMatrix").Length - 1);
+            using (StreamWriter writer = new StreamWriter(Server.onlineFilePath))
+            {
+                writer.WriteLine(playerInfo);
+                writer.Close();
+            }
         }
         else
         {
             SendError(404);
         }
+    
         client.Close();
+    }
+
+
+    public void SendFileHeader(string contentType, long fileLength)
+    {
+        string headers = $"HTTP/1.1 200 OK\nContent-type: {contentType}\nContent-Length: {fileLength}\n\n";
+
+        byte[] data = Encoding.UTF8.GetBytes(headers);
+        client.Send(data, data.Length, SocketFlags.None);
     }
 
 

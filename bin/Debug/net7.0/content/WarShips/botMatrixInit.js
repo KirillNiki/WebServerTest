@@ -1,3 +1,4 @@
+window.addEventListener('load', EnemyMatrixInit);
 
 function EnemyMatrixInit() {
     for (let i = 0; i < EnemyFieldMatrix.length; i++) {
