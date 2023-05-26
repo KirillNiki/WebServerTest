@@ -6,9 +6,11 @@ using System.Threading.Tasks;
 using System.Net;
 using System.Net.Sockets;
 
+using System.Timers;
+
 class Server
 {
-    public static string onlineFilePath = "online.json";
+    public static string onlineFilePath = @"bin/Debug/net7.0/content/WarShips/online.json";
 
     public EndPoint IP { get { return ip; } }
     private EndPoint ip;
@@ -21,17 +23,30 @@ class Server
 
     private Socket socketListener;
     private volatile CancellationTokenSource cancellationToken;
-    private Thread AcceptEventThread;
-    
-    
-    public static int currentPlayerIndex = 0;
+    private Thread? AcceptEventThread;
+    public static List<EndPoint> endPoints = new List<EndPoint>();
+    public const int maxClients = 10;
+
 
     public class CurrentPlayerIndex
     {
-        public int currentPlayerIndex {get; set;}
+        public int currentPlayerIndex { get; set; }
     }
 
+    public class MatrixData
+    {
+        public int playerId { get; set; }
+        public int[][]? fieldMatrix { get; set; }
+    }
 
+    public static PlayerContent[] AllPlayersInfo = new PlayerContent[maxClients];
+    public struct PlayerContent
+    {
+        public int enemyIndex;
+        public int[][] fieldMatrix;
+        public Socket playerSocket;
+        public DateTime lastActionTime;
+    }
 
 
 
@@ -41,6 +56,12 @@ class Server
         this.ip = new IPEndPoint(IPAddress.Parse(GetLocalIPAddress()), port);
         this.socketListener = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp);
         this.cancellationToken = new CancellationTokenSource();
+
+
+        Client.watingTimer.Elapsed += (Object source, ElapsedEventArgs e) => Client.SendBot();
+
+        for (int i = 0; i < maxClients; i++)
+            Client.allSutableIdes.Add(i);
     }
 
 
@@ -49,7 +70,7 @@ class Server
         if (!active)
         {
             socketListener.Bind(ip);
-            socketListener.Listen(10);
+            socketListener.Listen(maxClients);
             active = true;
 
             this.AcceptEventThread = new Thread(() => ListeningSocket());

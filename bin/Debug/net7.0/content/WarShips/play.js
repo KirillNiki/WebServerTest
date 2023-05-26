@@ -23,7 +23,13 @@ async function StartGame() {
         var clientResponseInfo = { playerId: playerId.currentPlayerIndex, fieldMatrix: MyFieldMatrix };
         var clientResponse = JSON.stringify(clientResponseInfo);
         var returned = await SendAjaxRequest(request, clientResponse);
-        EnemyFieldMatrix = returned.fieldMatrix;
+
+        if (returned.playerId === -2) {
+            EnemyesFieldInit();
+            isBotPlay = true;
+        } else {
+            EnemyFieldMatrix = returned.fieldMatrix;
+        }
     }
 
 
@@ -54,14 +60,19 @@ const TopRight = { top: 0, right: 1 };
 
 let enemyShip = [];
 
-function ButtonPressed(event) {
+async function ButtonPressed(event) {
     let button = event.target;
     let parent = button.parentElement;
     let y = parent.y;
     let x = parent.x;
 
-    var clickedCell = { y: y, x: x };
-    fetch('clickedCellByMe', JSON.stringify(clickedCell)); // clickedCell
+    if (!isBotPlay) {
+        var clickedCell = { y: y, x: x };
+        var requestURl = 'clickedCellByMe';
+        var clientResponse = JSON.stringify(clickedCell);
+
+        var returned = await SendAjaxRequest(requestURl, clientResponse);
+    }
 
     switch (EnemyFieldMatrix[x][y]) {
         case States.ship:
@@ -93,7 +104,8 @@ function ButtonPressed(event) {
             if (isBotPlay)
                 ComputerMove();
             else {
-                fetch
+                var requestURl = 'clickedCellByEnemy';
+                var returned = await SendAjaxRequest(requestURl);
             }
 
             break;
