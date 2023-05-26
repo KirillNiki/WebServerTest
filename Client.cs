@@ -97,7 +97,7 @@ class Client
         allSutableIdes.RemoveAt(0);
 
 
-        // RemovePlayer();
+        RemovePlayer();
     }
 
 
