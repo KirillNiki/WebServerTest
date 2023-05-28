@@ -395,7 +395,7 @@ function StartEndGame(button) {
             isGameStarted = true;
             StartGame();
         }
-        else if (myShipsCount === 0 || myShipCellsCount === 0 || isOppenetLeft) {
+        else if (myShipsCount === 0 || myShipCellsCount === 0 || isOppenetLeft || enemyShipsCount === 0) {
             isBotPlay = false;
             isOppenetLeft = false;
             myShipCellsCount = 20;

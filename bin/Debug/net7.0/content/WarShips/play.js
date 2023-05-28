@@ -22,6 +22,9 @@ async function StartGame() {
         var request = 'getPlayerId';
         playerId = await SendAjaxRequest(request);
 
+        var startButton = document.getElementById(`start`);
+        startButton.style.visibility = `hidden`;
+
         request = 'getEnemyMatrix';
         var clientResponseInfo = { playerId: playerId.currentPlayerIndex, fieldMatrix: MyFieldMatrix };
         var clientResponse = JSON.stringify(clientResponseInfo);
