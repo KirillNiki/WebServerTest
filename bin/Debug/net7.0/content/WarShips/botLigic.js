@@ -114,6 +114,7 @@ function ComputerMove() {
             img.style.visibility = `visible`;
             img.style.zIndex = `100`;
         }
+    
     }, 2000);
 }
 
@@ -121,15 +122,14 @@ function ComputerMove() {
 function ComputerIsThinking() {
     let darker = document.getElementById(`darker`);
     darker.style.visibility = `visible`;
-    let darkerWriter = document.getElementById(`darkerWriter`);
-    darkerWriter.style.fontSize = darker.clientWidth / 30 + `px`;
+    
+    ShowEnemyTurn();
 
-    for (let i = 1; i <= 5; i++) {
-        setTimeout(() => { darkerWriter.innerHTML += `.`; }, 300 * i);
-    }
     setTimeout(() => {
         darker.style.visibility = `hidden`;
         darkerWriter.innerHTML = ``;
+        
+        ShowYourTurn();
     }, 2000);
 }
 

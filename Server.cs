@@ -39,13 +39,33 @@ class Server
         public int[][]? fieldMatrix { get; set; }
     }
 
+    public class CellData
+    {
+        public int playerId { get; set; }
+        public int y { get; set; }
+        public int x { get; set; }
+    }
+
+    public class SuccessFulOperation
+    {
+        public int success { get; set; }
+    }
+
+    public class MoveNumber
+    {
+        public int moveNumber { get; set; }
+    }
+
     public static PlayerContent[] AllPlayersInfo = new PlayerContent[maxClients];
     public struct PlayerContent
     {
         public int enemyIndex;
         public int[][] fieldMatrix;
         public Socket playerSocket;
-        public DateTime lastActionTime;
+        public System.Timers.Timer lastActionTimer;
+
+        public int y;
+        public int x;
     }
 
 

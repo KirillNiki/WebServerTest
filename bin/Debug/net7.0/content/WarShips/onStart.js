@@ -18,7 +18,7 @@ function InitMatrix() {
     }
 }
 const tableLength = 10;
-let offset = document.getElementById(`darker`).clientWidth / 100;
+let offset;
 let prevX = 0, prevY = 0;
 let AllShipStartPositions = [
     { left: 10, top: 30 },
@@ -133,7 +133,6 @@ for (let i = 0; i < AllMyCells.length; i++) {
 
 
 function Resize() {
-    offset = document.getElementById(`darker`).clientWidth / 100;
     let mainBlock = document.getElementById(`mainBlock`);
     mainBlock.style.height = mainBlock.clientWidth / 2 + `px`;
 
@@ -174,6 +173,19 @@ function Resize() {
             EnemyShips[i].style.transformOrigin = `${delta}px ${delta}px`;
         }
     }
+
+    var darker = document.getElementById(`darker`);
+    darker.style.height = document.documentElement.scrollHeight + `px`;
+    darker.style.width = document.documentElement.scrollWidth + `px`;
+
+    var strLength = AllWarShips[0].style.height.length;
+    var str = AllWarShips[0].style.height.substring(0, strLength - 2);
+    var temp = parseFloat(str);
+    offset = Math.floor(temp / 5);
+
+    var turn = document.getElementById(`turn`);
+    turn.style.width = (width * 8) + `px`;
+    turn.style.height = (width * 4) + `px`;
 }
 
 
@@ -189,10 +201,13 @@ function OnMouseDown(event) {
     let object = document.getElementById(event.target.id);
     if (object.cellX !== -1) {
         ShipAndMatrix(object, States.none);
+
+        object.cellX = -1;
+        object.cellY = -1;
         shipsCount--;
     }
-    let left = object.getBoundingClientRect().left;
-    let top = object.getBoundingClientRect().top;
+    let left = getCoords(object).left;
+    let top = getCoords(object).top;
     let main = document.getElementById(`main`);
     main.appendChild(object);
 
@@ -257,15 +272,15 @@ function PutShipIntoCell(id) {
     let isPuted = false;
 
     for (let i = 0; i < AllCells.length; i++) {
-        var offsetLeft = AllCells[i].getBoundingClientRect().left;
-        var offsetTop = AllCells[i].getBoundingClientRect().top;
+        var offsetLeft = getCoords(AllCells[i]).left;
+        var offsetTop = getCoords(AllCells[i]).top;
 
-        if (Math.abs(parseInt(object.style.left) - parseInt(offsetLeft)) <= offset &&
-            Math.abs(parseInt(object.style.top) - parseInt(offsetTop)) <= offset) {
+        if (Math.abs(parseInt(getCoords(object).left) - parseInt(offsetLeft)) <= offset && 
+            Math.abs(parseInt(getCoords(object).top) - parseInt(offsetTop)) <= offset) {
 
             for (let j = 0; j < AllCells.length; j++) {
-                var endoffsetLeft = AllCells[j].getBoundingClientRect().left;
-                var endoffsetTop = AllCells[j].getBoundingClientRect().top;
+                var endoffsetLeft = getCoords(AllCells[j]).left;
+                var endoffsetTop = getCoords(AllCells[j]).top;
                 var endShipTop = object.width / object.length * (object.length - 1) + object.offsetTop;
                 var endShipLeft = object.width / object.length * (object.length - 1) + object.offsetLeft;
 
@@ -381,6 +396,7 @@ function StartEndGame(button) {
             StartGame();
         }
         else {
+            isBotPlay = false;
             button.innerHTML = `start`;
             enemyShipsCount = 10;
             myShipsCount = 10;
@@ -441,6 +457,21 @@ function StartEndGame(button) {
 }
 
 
+
+function getCoords(elem) {
+    let box = elem.getBoundingClientRect();
+
+    return {
+        top: box.top + window.pageYOffset,
+        right: box.right + window.pageXOffset,
+        bottom: box.bottom + window.pageYOffset,
+        left: box.left + window.pageXOffset
+    };
+}
+
+
+
+
 function AutomaticPlacing() {
     let shipnum = 4;
     let shipLen = 1;
@@ -448,8 +479,8 @@ function AutomaticPlacing() {
     for (let i = 1; i < tableLength; i += 2) {
         for (let j = 0; j < (shipLen + 1) * shipnum; j += shipLen + 1) {
 
-            var left = AllMyCells[i * tableLength + j].getBoundingClientRect().left;
-            var top = AllMyCells[i * tableLength + j].getBoundingClientRect().top;
+            var left = getCoords(AllMyCells[i * tableLength + j]).left;
+            var top = getCoords(AllMyCells[i * tableLength + j]).top;
             AllWarShips[index].style.top = top + `px`;
             AllWarShips[index].style.left = left + `px`;
             PutShipIntoCell(AllWarShips[index].id);

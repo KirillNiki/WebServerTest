@@ -61,10 +61,23 @@ div {
 
 #darker {
     position: absolute;
-    height: 100%;
-    width: 100%;
+    visibility: hidden;
+    top: 0px;
+    left: 0px;
+
     background-color: rgba(0, 0, 0, 60%);
     z-index: 100000;
+}
+
+#turn {
+    position: absolute;
+    visibility: hidden;
+    background-color: rgb(25, 98, 161, 40%);
+
+    z-index: 10000;
+    margin-top: 100px;
+    margin-left: 36.2%;
+    border-radius: 20%;
 }
 
 p {
@@ -80,6 +93,13 @@ p {
     color: aliceblue;
     margin-left: 44%;
     margin-top: 20%;
+}
+
+#turnWriter {
+    color: aliceblue;
+    margin-left: 24%;
+    margin-top: 20%;
+    font-size: 120%;
 }
 
 .WarShip {

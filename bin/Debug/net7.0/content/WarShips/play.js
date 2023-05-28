@@ -7,13 +7,14 @@ let CellsToChose = new Array(100);
 let isBotPlay = false;
 
 var playerId;
-
+var moveNumber;
 
 async function StartGame() {
     let AllButtons = document.getElementsByClassName(`button`);
 
     if (isBotPlay) {
         EnemyesFieldInit();
+        ShowYourTurn();
     }
     else {
         var request = 'getPlayerId';
@@ -22,13 +23,35 @@ async function StartGame() {
         request = 'getEnemyMatrix';
         var clientResponseInfo = { playerId: playerId.currentPlayerIndex, fieldMatrix: MyFieldMatrix };
         var clientResponse = JSON.stringify(clientResponseInfo);
+
+        var darker = document.getElementById(`darker`);
+        darker.style.visibility = `visible`;
+
+        var darkerWriter = document.getElementById(`darkerWriter`);
+        darkerWriter.innerText = `waiting for opponent`;
+
         var returned = await SendAjaxRequest(request, clientResponse);
+        darker.style.visibility = `hidden`;
+        darkerWriter.innerText = ``;
 
         if (returned.playerId === -2) {
             EnemyesFieldInit();
             isBotPlay = true;
+
+            ShowYourTurn();
         } else {
             EnemyFieldMatrix = returned.fieldMatrix;
+
+            request = 'getMoveNumber';
+            var clientResponseInfo = { currentPlayerIndex: playerId.currentPlayerIndex };
+            var clientResponse = JSON.stringify(clientResponseInfo);
+            moveNumber = await SendAjaxRequest(request, clientResponse);
+
+            if (moveNumber.moveNumber === 2)
+                GetEnemyClickedCell();
+            else {
+                ShowYourTurn();
+            }
         }
     }
 
@@ -65,9 +88,13 @@ async function ButtonPressed(event) {
     let parent = button.parentElement;
     let y = parent.y;
     let x = parent.x;
+    button.style.visibility = `hidden`;
+
+    var turn = document.getElementById(`turn`);
+    turn.style.visibility = `hidden`;
 
     if (!isBotPlay) {
-        var clickedCell = { y: y, x: x };
+        var clickedCell = { playerId: playerId.currentPlayerIndex, y: x, x: y };
         var requestURl = 'clickedCellByMe';
         var clientResponse = JSON.stringify(clickedCell);
 
@@ -76,7 +103,6 @@ async function ButtonPressed(event) {
 
     switch (EnemyFieldMatrix[x][y]) {
         case States.ship:
-            button.style.visibility = `hidden`;
             parent.getElementsByClassName(`got`)[0].style.visibility = `visible`;
             EnemyFieldMatrix[x][y] = States.destroyed;
             let img = document.getElementById(`enemy` + (x).toString() + (y).toString());
@@ -97,18 +123,44 @@ async function ButtonPressed(event) {
             break;
 
         default:
-            button.style.visibility = `hidden`;
             parent.getElementsByClassName(`missed`)[0].style.visibility = `visible`;
             EnemyFieldMatrix[x][y] = States.missed;
 
             if (isBotPlay)
                 ComputerMove();
-            else {
-                var requestURl = 'clickedCellByEnemy';
-                var returned = await SendAjaxRequest(requestURl);
-            }
+            else
+                GetEnemyClickedCell();
 
             break;
+    }
+}
+
+
+async function GetEnemyClickedCell() {
+    var requestURl = 'clickedCellByEnemy';
+    var clientResponseInfo = { currentPlayerIndex: playerId.currentPlayerIndex };
+    var clientResponse = JSON.stringify(clientResponseInfo);
+
+    var darker = document.getElementById(`darker`);
+    darker.style.visibility = `visible`;
+    ShowEnemyTurn();
+
+
+    var returned = await SendAjaxRequest(requestURl, clientResponse);
+    var cell = document.getElementById(returned.y.toString() + returned.x.toString());
+
+    if (MyFieldMatrix[returned.y][returned.x] === States.ship) {
+        cell.getElementsByClassName(`got`)[0].style.visibility = `visible`;
+        MyFieldMatrix[returned.y][returned.x] = States.destroyed;
+
+        GetEnemyClickedCell();
+    }
+    else {
+        cell.getElementsByClassName(`missed`)[0].style.visibility = `visible`;
+        MyFieldMatrix[returned.y][returned.x] = States.missed;
+        darker.style.visibility = `hidden`;
+
+        ShowYourTurn();
     }
 }
 
@@ -231,4 +283,24 @@ function GameOver() {
         StartEndGame(button);
         timeOut.style.visibility = `hidden`;
     }, 1000);
+}
+
+
+function ShowYourTurn() {
+    var turn = document.getElementById(`turn`);
+    turn.style.visibility = `visible`;
+
+    var turnWriter = document.getElementById(`turnWriter`);
+    turnWriter.style.marginLeft = `24%`;
+    turnWriter.innerText = `your turn`;
+}
+
+
+function ShowEnemyTurn() {
+    var turn = document.getElementById(`turn`);
+    turn.style.visibility = `visible`;
+
+    var turnWriter = document.getElementById(`turnWriter`);
+    turnWriter.style.marginLeft = `6%`;
+    turnWriter.innerText = `opponents turn`;
 }
