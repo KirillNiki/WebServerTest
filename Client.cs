@@ -15,12 +15,20 @@ using System.Timers;
 
 class Client
 {
+    private const int enemyKickedId = -3;
+    private const int botId = -2;
+    private const int maxWaitingtime = 20000; //millisec
+    private const int maxInactionTime = 40000; //millisec
+    private const int fieldWidth = 10;
+
+
+
     Socket client;
     HTTPHeaders Headers;
 
     private static Server.PlayerContent[] AllPlayersInfo = Server.AllPlayersInfo;
     private static int waiterId = -1;
-    public static Timer watingTimer = new Timer(20000);
+    public static Timer watingTimer = new Timer(maxWaitingtime);
 
     private delegate void NewClientConnected();
     private static event NewClientConnected? newClientConnected;
@@ -101,10 +109,10 @@ class Client
 
         AllPlayersInfo[allSutableIdes[0]] = new Server.PlayerContent { enemyIndex = -1 };
         Server.PlayerContent temp = AllPlayersInfo[allSutableIdes[0]];
-        temp.fieldMatrix = new int[10][];
+        temp.fieldMatrix = new int[fieldWidth][];
         for (int i = 0; i < temp.fieldMatrix.Length; i++)
         {
-            temp.fieldMatrix[i] = new int[10];
+            temp.fieldMatrix[i] = new int[fieldWidth];
         }
         temp.y = -1;
         temp.x = -1;
@@ -156,9 +164,8 @@ class Client
         Server.PlayerContent freePlayer = new Server.PlayerContent();
         Server.PlayerContent temp = AllPlayersInfo[playerId];
 
-        temp.lastActionTimer = new Timer(20000);
-        // temp.lastActionTimer.Elapsed += (Object source, ElapsedEventArgs e) => RemovePlayer(playerId);
-        temp.lastActionTimer.Start();
+        temp.lastActionTimer = new Timer(maxInactionTime);
+        temp.lastActionTimer.Elapsed += (Object source, ElapsedEventArgs e) => RemovePlayer(playerId);
 
         if (freePlayerId == -1)
         {
@@ -215,10 +222,12 @@ class Client
         if (playerIndex.currentPlayerIndex < AllPlayersInfo[playerIndex.currentPlayerIndex].enemyIndex)
         {
             SendSomeData(new Server.MoveNumber() { moveNumber = 1 }, client);
+            AllPlayersInfo[playerIndex.currentPlayerIndex].lastActionTimer.Start();
         }
         else
         {
             SendSomeData(new Server.MoveNumber() { moveNumber = 2 }, client);
+            AllPlayersInfo[playerIndex.currentPlayerIndex].lastActionTimer.Stop();
         }
     }
 
@@ -229,6 +238,11 @@ class Client
         for (int i = 0; i < AllPlayersInfo.Length; i++)
             Console.WriteLine(AllPlayersInfo[i].enemyIndex);
         Console.WriteLine();
+
+        var enemyId = AllPlayersInfo[playerId].enemyIndex;
+        SendSomeData(new Server.CellData() { playerId = enemyKickedId }, AllPlayersInfo[enemyId].playerSocket);
+        AllPlayersInfo[enemyId] = default(Server.PlayerContent);
+        allSutableIdes.Add(enemyId);
 
 
         AllPlayersInfo[playerId] = default(Server.PlayerContent);
@@ -244,7 +258,7 @@ class Client
     public static void SendBot()
     {
         Socket clientSocket = Server.AllPlayersInfo[waiterId].playerSocket;
-        SendSomeData(new Server.MatrixData() { playerId = -2 }, clientSocket);
+        SendSomeData(new Server.MatrixData() { playerId = botId }, clientSocket);
 
         watingTimer.Stop();
         watingTimer.Dispose();
@@ -262,10 +276,10 @@ class Client
         var temp = AllPlayersInfo[returnedCellData.playerId];
         temp.y = returnedCellData.y;
         temp.x = returnedCellData.x;
+        temp.lastActionTimer.Stop();
+
         AllPlayersInfo[returnedCellData.playerId] = temp;
 
-        Console.WriteLine(temp.y);
-        Console.WriteLine(temp.x);
 
         SendSomeData(new Server.SuccessFulOperation() { success = 1 }, client);
         onsendCell?.Invoke();
@@ -288,6 +302,7 @@ class Client
             temp.y = -1;
             temp.x = -1;
             client.Close();
+            AllPlayersInfo[returnedId.currentPlayerIndex].lastActionTimer.Start();
         }
         else
         {
@@ -307,6 +322,7 @@ class Client
             AllPlayersInfo[playerId].playerSocket.Close();
             temp.y = -1;
             temp.x = -1;
+            temp.lastActionTimer.Start();
             AllPlayersInfo[enemyId] = temp;
         }
     }

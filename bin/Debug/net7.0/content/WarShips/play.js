@@ -51,6 +51,7 @@ async function StartGame() {
                 GetEnemyClickedCell();
             else {
                 ShowYourTurn();
+                SetActionTimer();
             }
         }
     }
@@ -89,6 +90,9 @@ async function ButtonPressed(event) {
     let y = parent.y;
     let x = parent.x;
     button.style.visibility = `hidden`;
+
+    clearTimeout(actionTimer);
+
 
     var turn = document.getElementById(`turn`);
     turn.style.visibility = `hidden`;
@@ -136,6 +140,8 @@ async function ButtonPressed(event) {
 }
 
 
+let actionTimer;
+
 async function GetEnemyClickedCell() {
     var requestURl = 'clickedCellByEnemy';
     var clientResponseInfo = { currentPlayerIndex: playerId.currentPlayerIndex };
@@ -147,6 +153,16 @@ async function GetEnemyClickedCell() {
 
 
     var returned = await SendAjaxRequest(requestURl, clientResponse);
+    if (returned.playerId === -3) {
+        var darkerWriter = document.getElementById(`darkerWriter`);
+        darkerWriter.innerText = `oppenent has left the game`;
+
+        var turn = document.getElementById(`turn`);
+        turn.style.visibility = `hidden`;
+        // back to the start
+        return;
+    }
+
     var cell = document.getElementById(returned.y.toString() + returned.x.toString());
 
     if (MyFieldMatrix[returned.y][returned.x] === States.ship) {
@@ -161,8 +177,25 @@ async function GetEnemyClickedCell() {
         darker.style.visibility = `hidden`;
 
         ShowYourTurn();
+        SetActionTimer();
     }
 }
+
+
+function SetActionTimer() {
+    actionTimer = setTimeout(() => {
+        const darker = document.getElementById(`darker`);
+        darker.style.visibility = `visible`;
+
+        const turn = document.getElementById(`turn`);
+        turn.style.visibility = `hidden`;
+
+        setTimeout(()=>{
+            alert(`you had been kcicked`);
+        }, 100);
+    }, 40000);
+}
+
 
 
 function CheckCell(x, y, checkedY, checkedX) {
