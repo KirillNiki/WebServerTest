@@ -395,7 +395,7 @@ function StartEndGame(button) {
             isGameStarted = true;
             StartGame();
         }
-        else if (myShipsCount === 0 || myShipCellsCount === 0 || isOppenetLeft || enemyShipsCount === 0) {
+        else if (isGameStarted) {
             isBotPlay = false;
             isOppenetLeft = false;
             myShipCellsCount = 20;
@@ -454,6 +454,12 @@ function StartEndGame(button) {
                 img2[i].style.visibility = `hidden`;
                 img2[i].style.zIndex = `20`;
             }
+
+            var darker = document.getElementById(`darker`);
+            darker.style.visibility = `hidden`;
+
+            var turn = document.getElementById(`turn`);
+            turn.style.visibility = `hidden`;
         }
     }
 }
