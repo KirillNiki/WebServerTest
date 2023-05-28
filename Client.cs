@@ -94,6 +94,11 @@ class Client
         {
             GetEnemyClickedCell();
         }
+        else if (Headers.File.Substring(0, ("/content/WarShips/endGame").Length) == "/content/WarShips/endGame")
+        {
+            EndGame();
+            client.Close();
+        }
         else
         {
             SendError(404);
@@ -191,25 +196,6 @@ class Client
         }
         SendSomeData(new Server.MatrixData() { playerId = freePlayerId, fieldMatrix = freePlayer.fieldMatrix }, currentClient);
         currentClient.Close();
-
-
-        for (int i = 0; i < AllPlayersInfo.Length; i++)
-        {
-            if (!AllPlayersInfo[i].Equals(default(Server.PlayerContent)))
-            {
-                Console.WriteLine($"{i}:   {AllPlayersInfo[i].enemyIndex}");
-            }
-        }
-
-
-        for (int y = 0; y < AllPlayersInfo[playerId].fieldMatrix.Length; y++)
-        {
-            for (int x = 0; x < AllPlayersInfo[playerId].fieldMatrix[y].Length; x++)
-            {
-                Console.Write(AllPlayersInfo[playerId].fieldMatrix[y][x]);
-            }
-            Console.WriteLine();
-        }
     }
 
 
@@ -235,22 +221,16 @@ class Client
 
     private static void RemovePlayer(int playerId)
     {
-        for (int i = 0; i < AllPlayersInfo.Length; i++)
-            Console.WriteLine(AllPlayersInfo[i].enemyIndex);
-        Console.WriteLine();
-
         var enemyId = AllPlayersInfo[playerId].enemyIndex;
         SendSomeData(new Server.CellData() { playerId = enemyKickedId }, AllPlayersInfo[enemyId].playerSocket);
-        AllPlayersInfo[enemyId] = default(Server.PlayerContent);
-        allSutableIdes.Add(enemyId);
-
+        if (enemyId >= 0)
+        {
+            AllPlayersInfo[enemyId] = default(Server.PlayerContent);
+            allSutableIdes.Add(enemyId);
+        }
 
         AllPlayersInfo[playerId] = default(Server.PlayerContent);
         allSutableIdes.Add(playerId);
-
-
-        for (int i = 0; i < AllPlayersInfo.Length; i++)
-            Console.WriteLine(AllPlayersInfo[i].enemyIndex);
     }
 
 
@@ -325,6 +305,21 @@ class Client
             temp.lastActionTimer.Start();
             AllPlayersInfo[enemyId] = temp;
         }
+    }
+
+
+
+    public void EndGame()
+    {
+        var playerId = System.Web.HttpUtility.UrlDecode(Headers.File.Substring(("/content/WarShips/endGame").Length + 1));
+        Server.CurrentPlayerIndex? returnedId = JsonSerializer.Deserialize<Server.CurrentPlayerIndex>(playerId);
+
+        var temp = AllPlayersInfo[returnedId.currentPlayerIndex];
+        Console.WriteLine($"player {returnedId.currentPlayerIndex} won");
+        Console.WriteLine($"player {temp.enemyIndex} lost");
+
+        RemovePlayer(returnedId.currentPlayerIndex);
+        SendSomeData(new Server.SuccessFulOperation() { success = 1 }, client);
     }
 
 

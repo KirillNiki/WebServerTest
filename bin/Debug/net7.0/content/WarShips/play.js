@@ -1,5 +1,7 @@
 let enemyShipsCount = 10;
 let myShipsCount = 10;
+let myShipCellsCount = 20;
+let isOppenetLeft = false;
 
 let EnemyFieldMatrix = new Array(10);
 let AllEnemyCells = document.getElementsByClassName(`enemyBlock`);
@@ -159,7 +161,9 @@ async function GetEnemyClickedCell() {
 
         var turn = document.getElementById(`turn`);
         turn.style.visibility = `hidden`;
-        // back to the start
+
+        myShipCellsCount = true;
+        StartEndGame();
         return;
     }
 
@@ -168,6 +172,12 @@ async function GetEnemyClickedCell() {
     if (MyFieldMatrix[returned.y][returned.x] === States.ship) {
         cell.getElementsByClassName(`got`)[0].style.visibility = `visible`;
         MyFieldMatrix[returned.y][returned.x] = States.destroyed;
+        myShipCellsCount--;
+
+        if (myShipCellsCount === 0) {
+            GameOver();
+            return;
+        }
 
         GetEnemyClickedCell();
     }
@@ -190,8 +200,8 @@ function SetActionTimer() {
         const turn = document.getElementById(`turn`);
         turn.style.visibility = `hidden`;
 
-        setTimeout(()=>{
-            alert(`you had been kcicked`);
+        setTimeout(() => {
+            alert(`you had been kicked`);
         }, 100);
     }, 40000);
 }
@@ -304,16 +314,26 @@ function GameOver() {
     let timeOut = document.getElementById(`timeOut`);
     timeOut.style.visibility = `visible`;
 
-    setTimeout(() => {
-        if (myShipsCount === 0) {
+    setTimeout(async () => {
+        if (myShipsCount === 0 || myShipCellsCount === 0) {
             alert(`Game over, you lost`);
         }
         else if (enemyShipsCount === 0) {
             alert(`Game over, you won`);
         }
 
+        if (!isBotPlay && enemyShipsCount === 0) {
+            var endGame = { currentPlayerIndex: playerId.currentPlayerIndex};
+            var requestURl = 'endGame';
+            var clientResponse = JSON.stringify(endGame);
+
+            var returned = await SendAjaxRequest(requestURl, clientResponse);
+        }
+
         let button = document.getElementById(`start`);
+        button.style.visibility = `visible`;
         StartEndGame(button);
+
         timeOut.style.visibility = `hidden`;
     }, 1000);
 }
