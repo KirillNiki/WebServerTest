@@ -386,6 +386,8 @@ function StartEndGame(button) {
         if (!isButtonPressed) {
 
             button.innerHTML = `restart`;
+            button.style.visibility = `hidden`;
+
             for (let i = 0; i < AllWarShips.length; i++) {
                 AllWarShips[i].removeEventListener('mousedown', OnMouseDown);
                 AllWarShips[i].style.zIndex = `1`;
@@ -397,10 +399,13 @@ function StartEndGame(button) {
             isBotPlay = false;
             isOppenetLeft = false;
             myShipCellsCount = 20;
-            button.innerHTML = `start`;
             enemyShipsCount = 10;
             myShipsCount = 10;
             let main = document.getElementById(`main`);
+
+            var startButoon = document.getElementById(`start`);
+            startButoon.innerHTML = `start`;
+            startButoon.style.visibility = `visible`;
 
             for (let i = 0; i < AllWarShips.length; i++) {
                 AllWarShips[i].addEventListener('mousedown', OnMouseDown);
