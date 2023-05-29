@@ -66,6 +66,16 @@ class Server
 
         public int y;
         public int x;
+
+        public static PlayerContent Default => new PlayerContent()
+        {
+            enemyIndex = -100,
+            fieldMatrix = null,
+            playerSocket = null,
+            lastActionTimer = null,
+            y = -1,
+            x = -1
+        };
     }
 
 
@@ -76,6 +86,9 @@ class Server
         this.ip = new IPEndPoint(IPAddress.Parse(GetLocalIPAddress()), port);
         this.socketListener = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp);
         this.cancellationToken = new CancellationTokenSource();
+
+        for (int i = 0; i < AllPlayersInfo.Length; i++)
+            AllPlayersInfo[i] = PlayerContent.Default;
 
 
         Client.watingTimer.Elapsed += (Object source, ElapsedEventArgs e) => Client.SendBot();

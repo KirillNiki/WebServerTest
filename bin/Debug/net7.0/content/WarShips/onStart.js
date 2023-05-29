@@ -6,7 +6,6 @@ window.addEventListener('load', AutomaticPlacing);
 window.addEventListener('resize', Resize);
 
 
-let isGameStarted = false;
 const States = { none: 0, destroyed: 1, ship: 2, missed: 3, busy: 4 };
 const MyFieldMatrix = new Array(10);
 function InitMatrix() {
@@ -392,10 +391,9 @@ function StartEndGame(button) {
                 AllWarShips[i].style.zIndex = `1`;
             }
             isButtonPressed = true;
-            isGameStarted = true;
             StartGame();
         }
-        else if (isGameStarted) {
+        else {
             isBotPlay = false;
             isOppenetLeft = false;
             myShipCellsCount = 20;
@@ -443,7 +441,6 @@ function StartEndGame(button) {
                 AllButtons[i].style.visibility = `visible`;
             }
             isButtonPressed = false;
-            isGameStarted = false;
             shipsCount = 0;
 
             let img1 = document.getElementsByClassName(`got`);
@@ -460,6 +457,9 @@ function StartEndGame(button) {
 
             var turn = document.getElementById(`turn`);
             turn.style.visibility = `hidden`;
+
+
+            AutomaticPlacing();
         }
     }
 }

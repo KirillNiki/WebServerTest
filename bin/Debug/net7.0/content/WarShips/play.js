@@ -125,7 +125,7 @@ async function ButtonPressed(event) {
                 enemyShipsCount--;
 
                 if (enemyShipsCount === 0) {
-                    GameOver();
+                    await GameOver();
                     return 1;
                 }
             }
@@ -178,7 +178,7 @@ async function GetEnemyClickedCell() {
         myShipCellsCount--;
 
         if (myShipCellsCount === 0) {
-            GameOver();
+            await GameOver();
             return;
         }
 
@@ -313,11 +313,16 @@ function VisualizeDestroyedShip() {
 
 
 
-function GameOver() {
-    let timeOut = document.getElementById(`timeOut`);
-    timeOut.style.visibility = `visible`;
-
+async function GameOver() {
     setTimeout(async () => {
+        if (!isBotPlay && enemyShipsCount === 0) {
+            var endGame = { currentPlayerIndex: playerId.currentPlayerIndex };
+            var requestURl = 'endGame';
+            var clientResponse = JSON.stringify(endGame);
+
+            var returned = await SendAjaxRequest(requestURl, clientResponse);
+        }
+
         if (myShipsCount === 0 || myShipCellsCount === 0) {
             alert(`Game over, you lost`);
         }
@@ -325,19 +330,9 @@ function GameOver() {
             alert(`Game over, you won`);
         }
 
-        if (!isBotPlay && enemyShipsCount === 0) {
-            var endGame = { currentPlayerIndex: playerId.currentPlayerIndex};
-            var requestURl = 'endGame';
-            var clientResponse = JSON.stringify(endGame);
-
-            var returned = await SendAjaxRequest(requestURl, clientResponse);
-        }
-
         let button = document.getElementById(`start`);
         button.style.visibility = `visible`;
         StartEndGame(button);
-
-        timeOut.style.visibility = `hidden`;
     }, 1000);
 }
 

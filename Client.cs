@@ -30,11 +30,41 @@ class Client
     private static int waiterId = -1;
     public static Timer watingTimer = new Timer(maxWaitingtime);
 
-    private delegate void NewClientConnected();
-    private static event NewClientConnected? newClientConnected;
 
+    private static List<NewClientConnected> newClientDelegates = new List<NewClientConnected>();
+    private delegate void NewClientConnected();
+    private static event NewClientConnected? newClientConnectedReal;
+
+    private static event NewClientConnected? newClientConnected
+    {
+        add
+        {
+            newClientConnectedReal += value;
+            newClientDelegates.Add(value);
+        }
+        remove
+        {
+            newClientConnectedReal -= value;
+            newClientDelegates.Remove(value);
+        }
+    }
+
+    private static List<OnsendCell> sendCellDelegates = new List<OnsendCell>();
     private delegate void OnsendCell();
-    private static event OnsendCell? onsendCell;
+    private static event OnsendCell? onsendCellReal;
+    private static event OnsendCell? onsendCell
+    {
+        add
+        {
+            onsendCellReal += value;
+            sendCellDelegates.Add(value);
+        }
+        remove
+        {
+            onsendCellReal -= value;
+            sendCellDelegates.Remove(value);
+        }
+    }
 
     public static List<int> allSutableIdes = new List<int>(Server.maxClients);
 
@@ -152,10 +182,10 @@ class Client
         else
         {
             watingTimer.Stop();
-            watingTimer.Dispose();
 
-            newClientConnected?.Invoke();
-            newClientConnected -= () => GetSendMatrix(waiterId, AllPlayersInfo[waiterId].playerSocket);
+            newClientConnectedReal?.Invoke();
+            for (int i = 0; i < newClientDelegates.Count; i++)
+                newClientConnected -= newClientDelegates[i];
 
             GetSendMatrix(returnedMatrixData.playerId, AllPlayersInfo[returnedMatrixData.playerId].playerSocket, waiterId);
             waiterId = -1;
@@ -170,13 +200,13 @@ class Client
         Server.PlayerContent temp = AllPlayersInfo[playerId];
 
         temp.lastActionTimer = new Timer(maxInactionTime);
-        temp.lastActionTimer.Elapsed += (Object source, ElapsedEventArgs e) => RemovePlayer(playerId);
+        temp.lastActionTimer.Elapsed += (Object source, ElapsedEventArgs e) => RemovePlayer(playerId, true);
 
         if (freePlayerId == -1)
         {
             for (int i = 0; i < AllPlayersInfo.Length; i++)
             {
-                if (!AllPlayersInfo[i].Equals(default(Server.PlayerContent)) && i != playerId && AllPlayersInfo[i].enemyIndex == -1)
+                if (!AllPlayersInfo[i].Equals(Server.PlayerContent.Default) && i != playerId && AllPlayersInfo[i].enemyIndex == -1)
                 {
                     freePlayer = AllPlayersInfo[i];
                     freePlayerId = i;
@@ -194,6 +224,7 @@ class Client
             temp.enemyIndex = freePlayerId;
             AllPlayersInfo[playerId] = temp;
         }
+
         SendSomeData(new Server.MatrixData() { playerId = freePlayerId, fieldMatrix = freePlayer.fieldMatrix }, currentClient);
         currentClient.Close();
     }
@@ -219,17 +250,20 @@ class Client
 
 
 
-    private static void RemovePlayer(int playerId)
+    private static void RemovePlayer(int playerId, bool isKicked)
     {
-        var enemyId = AllPlayersInfo[playerId].enemyIndex;
-        SendSomeData(new Server.CellData() { playerId = enemyKickedId }, AllPlayersInfo[enemyId].playerSocket);
-        if (enemyId >= 0)
+        if (isKicked)
         {
-            AllPlayersInfo[enemyId] = default(Server.PlayerContent);
-            allSutableIdes.Add(enemyId);
+            var enenmyId = AllPlayersInfo[playerId].enemyIndex;
+            SendSomeData(new Server.CurrentPlayerIndex() { currentPlayerIndex = enemyKickedId }, AllPlayersInfo[enenmyId].playerSocket);
+
+            RemovePlayer(enenmyId, false);
         }
 
-        AllPlayersInfo[playerId] = default(Server.PlayerContent);
+        var temp = AllPlayersInfo[playerId];
+        temp = Server.PlayerContent.Default;
+        AllPlayersInfo[playerId] = temp;
+
         allSutableIdes.Add(playerId);
     }
 
@@ -241,8 +275,7 @@ class Client
         SendSomeData(new Server.MatrixData() { playerId = botId }, clientSocket);
 
         watingTimer.Stop();
-        watingTimer.Dispose();
-        RemovePlayer(waiterId);
+        RemovePlayer(waiterId, false);
         waiterId = -1;
     }
 
@@ -262,8 +295,9 @@ class Client
 
 
         SendSomeData(new Server.SuccessFulOperation() { success = 1 }, client);
-        onsendCell?.Invoke();
-        onsendCell -= () => SendClickedCell(temp.enemyIndex);
+        onsendCellReal?.Invoke();
+        for (int i = 0; i < sendCellDelegates.Count; i++)
+            onsendCell -= sendCellDelegates[i];
     }
 
 
@@ -315,11 +349,11 @@ class Client
         Server.CurrentPlayerIndex? returnedId = JsonSerializer.Deserialize<Server.CurrentPlayerIndex>(playerId);
 
         var temp = AllPlayersInfo[returnedId.currentPlayerIndex];
-        Console.WriteLine($"player {returnedId.currentPlayerIndex} won");
-        Console.WriteLine($"player {temp.enemyIndex} lost");
 
-        RemovePlayer(returnedId.currentPlayerIndex);
+
         SendSomeData(new Server.SuccessFulOperation() { success = 1 }, client);
+        RemovePlayer(AllPlayersInfo[returnedId.currentPlayerIndex].enemyIndex, false);
+        RemovePlayer(returnedId.currentPlayerIndex, false);
     }
 
 
