@@ -327,7 +327,7 @@ async function GameOver() {
             alert(`Game over, you won`);
         }
 
-        StartEndGame(button);
+        StartEndGame();
     }, 1000);
 }
 
