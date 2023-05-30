@@ -26,6 +26,7 @@ class Server
     private Thread? AcceptEventThread;
     public static List<EndPoint> endPoints = new List<EndPoint>();
     public const int maxClients = 10;
+    public static List<BattleInfo> AllBattleInfo = new List<BattleInfo>(maxClients / 2);
 
 
     public class CurrentPlayerIndex

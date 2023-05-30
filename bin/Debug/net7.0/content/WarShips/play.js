@@ -162,8 +162,9 @@ async function GetEnemyClickedCell() {
         var turn = document.getElementById(`turn`);
         turn.style.visibility = `hidden`;
 
-        myShipCellsCount = true;
-        StartEndGame();
+        setTimeout(() => {
+            StartEndGame();
+        }, 2000);
         return;
     }
 
@@ -202,6 +203,7 @@ function SetActionTimer() {
 
         setTimeout(() => {
             alert(`you had been kicked`);
+            StartEndGame();
         }, 100);
     }, 40000);
 }

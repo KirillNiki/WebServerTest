@@ -50,7 +50,7 @@ class Client
     }
 
     private static List<OnsendCell> sendCellDelegates = new List<OnsendCell>();
-    private delegate void OnsendCell();
+    public delegate void OnsendCell();
     private static event OnsendCell? onsendCellReal;
     private static event OnsendCell? onsendCell
     {
@@ -188,6 +188,8 @@ class Client
                 newClientConnected -= newClientDelegates[i];
 
             GetSendMatrix(returnedMatrixData.playerId, AllPlayersInfo[returnedMatrixData.playerId].playerSocket, waiterId);
+
+            Server.AllBattleInfo.Add(new BattleInfo(returnedMatrixData.playerId, AllPlayersInfo[returnedMatrixData.playerId].enemyIndex));
             waiterId = -1;
         }
     }
@@ -198,9 +200,6 @@ class Client
     {
         Server.PlayerContent freePlayer = new Server.PlayerContent();
         Server.PlayerContent temp = AllPlayersInfo[playerId];
-
-        temp.lastActionTimer = new Timer(maxInactionTime);
-        temp.lastActionTimer.Elapsed += (Object source, ElapsedEventArgs e) => RemovePlayer(playerId, true);
 
         if (freePlayerId == -1)
         {
@@ -236,6 +235,13 @@ class Client
         var playerInfo = System.Web.HttpUtility.UrlDecode(Headers.File.Substring(("/content/WarShips/getMoveNumber").Length + 1));
         Server.CurrentPlayerIndex? playerIndex = JsonSerializer.Deserialize<Server.CurrentPlayerIndex>(playerInfo);
 
+        Server.PlayerContent temp = Server.AllPlayersInfo[playerIndex.currentPlayerIndex];
+        temp.lastActionTimer = new Timer(maxInactionTime);
+        temp.lastActionTimer.Elapsed += (Object source, ElapsedEventArgs e) => RemovePlayer(playerIndex.currentPlayerIndex, true);
+
+        Server.AllPlayersInfo[playerIndex.currentPlayerIndex] = temp;
+
+
         if (playerIndex.currentPlayerIndex < AllPlayersInfo[playerIndex.currentPlayerIndex].enemyIndex)
         {
             SendSomeData(new Server.MoveNumber() { moveNumber = 1 }, client);
@@ -255,12 +261,19 @@ class Client
         if (isKicked)
         {
             var enenmyId = AllPlayersInfo[playerId].enemyIndex;
-            SendSomeData(new Server.CurrentPlayerIndex() { currentPlayerIndex = enemyKickedId }, AllPlayersInfo[enenmyId].playerSocket);
+            SendSomeData(new Server.CellData() { playerId = enemyKickedId }, AllPlayersInfo[enenmyId].playerSocket);
 
             RemovePlayer(enenmyId, false);
+
+            BattleInfo? tempBattleInfo = Server.AllBattleInfo.Find(battleInfo => battleInfo.Player1Id == enenmyId ||
+                                                                                 battleInfo.Player2Id == enenmyId);
+            onsendCell -= tempBattleInfo.SendClickedCellToPlayer1;
+            onsendCell -= tempBattleInfo.SendClickedCellToPlayer2;
+            Server.AllBattleInfo.Remove(tempBattleInfo);
         }
 
         var temp = AllPlayersInfo[playerId];
+        temp.playerSocket.Close();
         temp = Server.PlayerContent.Default;
         AllPlayersInfo[playerId] = temp;
 
@@ -296,8 +309,12 @@ class Client
 
         SendSomeData(new Server.SuccessFulOperation() { success = 1 }, client);
         onsendCellReal?.Invoke();
-        for (int i = 0; i < sendCellDelegates.Count; i++)
-            onsendCell -= sendCellDelegates[i];
+        BattleInfo? tempBattleInfo = Server.AllBattleInfo.Find(battleInfo =>
+            battleInfo.Player1Id == returnedCellData.playerId ||
+            battleInfo.Player2Id == returnedCellData.playerId
+        );
+        onsendCell -= tempBattleInfo.SendClickedCellToPlayer1;
+        onsendCell -= tempBattleInfo.SendClickedCellToPlayer2;
     }
 
 
@@ -320,24 +337,15 @@ class Client
         }
         else
         {
-            onsendCell += () => SendClickedCell(returnedId.currentPlayerIndex);
+            BattleInfo? tempBattleInfo = Server.AllBattleInfo.Find(battleInfo =>
+                battleInfo.Player1Id == returnedId.currentPlayerIndex ||
+                battleInfo.Player2Id == returnedId.currentPlayerIndex
+            );
+
+            onsendCell += tempBattleInfo.SendClickedCellToPlayer1;
+            onsendCell += tempBattleInfo.SendClickedCellToPlayer2;
+
             AllPlayersInfo[returnedId.currentPlayerIndex].playerSocket = client;
-        }
-    }
-
-    private void SendClickedCell(int playerId)
-    {
-        var enemyId = AllPlayersInfo[playerId].enemyIndex;
-        var temp = AllPlayersInfo[enemyId];
-
-        if (temp.y != -1)
-        {
-            SendSomeData(new Server.CellData() { playerId = enemyId, y = temp.y, x = temp.x }, AllPlayersInfo[playerId].playerSocket);
-            AllPlayersInfo[playerId].playerSocket.Close();
-            temp.y = -1;
-            temp.x = -1;
-            temp.lastActionTimer.Start();
-            AllPlayersInfo[enemyId] = temp;
         }
     }
 
@@ -348,10 +356,14 @@ class Client
         var playerId = System.Web.HttpUtility.UrlDecode(Headers.File.Substring(("/content/WarShips/endGame").Length + 1));
         Server.CurrentPlayerIndex? returnedId = JsonSerializer.Deserialize<Server.CurrentPlayerIndex>(playerId);
 
-        var temp = AllPlayersInfo[returnedId.currentPlayerIndex];
-
-
         SendSomeData(new Server.SuccessFulOperation() { success = 1 }, client);
+
+        BattleInfo? tempBattleInfo = Server.AllBattleInfo.Find(battleInfo =>
+            battleInfo.Player1Id == returnedId.currentPlayerIndex ||
+            battleInfo.Player2Id == returnedId.currentPlayerIndex
+        );
+
+        Server.AllBattleInfo.Remove(tempBattleInfo);
         RemovePlayer(AllPlayersInfo[returnedId.currentPlayerIndex].enemyIndex, false);
         RemovePlayer(returnedId.currentPlayerIndex, false);
     }
