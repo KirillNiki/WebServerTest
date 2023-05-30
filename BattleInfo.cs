@@ -23,11 +23,13 @@ public class BattleInfo
 
     public void SendClickedCellToPlayer1()
     {
+        AllPlayersInfo[player1Id].aliveTimer.Stop();
         SendClickedCell(player1Id);
     }
 
     public void SendClickedCellToPlayer2()
     {
+        AllPlayersInfo[player2Id].aliveTimer.Stop();
         SendClickedCell(player2Id);
     }
 

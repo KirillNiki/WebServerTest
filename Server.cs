@@ -64,6 +64,7 @@ class Server
         public int[][] fieldMatrix;
         public Socket playerSocket;
         public System.Timers.Timer lastActionTimer;
+        public System.Timers.Timer aliveTimer;
 
         public int y;
         public int x;

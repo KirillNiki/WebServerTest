@@ -1,3 +1,5 @@
+// window.addEventListener('beforeunload', OnUnload);
+
 let enemyShipsCount = 10;
 let myShipsCount = 10;
 let myShipCellsCount = 20;
@@ -143,6 +145,7 @@ async function ButtonPressed(event) {
 
 
 let actionTimer;
+let aliveTimer;
 
 async function GetEnemyClickedCell() {
     var requestURl = 'clickedCellByEnemy';
@@ -153,6 +156,8 @@ async function GetEnemyClickedCell() {
     darker.style.visibility = `visible`;
     ShowEnemyTurn();
 
+    aliveTimer = setTimeout(SendAliveTimer(), 1000);``
+
 
     var returned = await SendAjaxRequest(requestURl, clientResponse);
     if (returned.playerId === -3) {
@@ -162,9 +167,7 @@ async function GetEnemyClickedCell() {
         var turn = document.getElementById(`turn`);
         turn.style.visibility = `hidden`;
 
-        setTimeout(() => {
-            StartEndGame();
-        }, 2000);
+        setTimeout(StartEndGame(), 2000);
         return;
     }
 
@@ -186,6 +189,8 @@ async function GetEnemyClickedCell() {
         cell.getElementsByClassName(`missed`)[0].style.visibility = `visible`;
         MyFieldMatrix[returned.y][returned.x] = States.missed;
         darker.style.visibility = `hidden`;
+
+        clearTimeout(aliveTimer);
 
         ShowYourTurn();
         SetActionTimer();
@@ -332,6 +337,31 @@ async function GameOver() {
         StartEndGame();
     }, 1000);
 }
+
+
+
+async function SendAliveTimer() {
+    if (!isBotPlay) {
+        var request = 'alive';
+        var clientResponseInfo = { currentPlayerIndex: playerId.currentPlayerIndex };
+        var clientResponse = JSON.stringify(clientResponseInfo);
+
+        var returnsed = await SendAjaxRequest(request, clientResponse);
+    }
+}
+
+
+
+function OnUnload() {
+    if (!isBotPlay) {
+        var request = 'disconnect';
+        var clientResponseInfo = { currentPlayerIndex: playerId.currentPlayerIndex };
+        var clientResponse = JSON.stringify(clientResponseInfo);
+
+        SendAjaxRequest(request, clientResponse);
+    }
+}
+
 
 
 function ShowYourTurn() {

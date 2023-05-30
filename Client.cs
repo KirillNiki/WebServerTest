@@ -19,6 +19,7 @@ class Client
     private const int botId = -2;
     private const int maxWaitingtime = 20000; //millisec
     private const int maxInactionTime = 40000; //millisec
+    private const int maxAliveTime = 2000; //millisec
     private const int fieldWidth = 10;
 
 
@@ -123,6 +124,16 @@ class Client
         else if (Headers.File.Substring(0, ("/content/WarShips/clickedCellByEnemy").Length) == "/content/WarShips/clickedCellByEnemy")
         {
             GetEnemyClickedCell();
+        }
+        // else if (Headers.File.Substring(0, ("/content/WarShips/disconnect").Length) == "/content/WarShips/disconnect")
+        // {
+        //     OnPlayerDisconnect();
+        //     client.Close();
+        // }
+        else if (Headers.File.Substring(0, ("/content/WarShips/alive").Length) == "/content/WarShips/alive")
+        {
+            OnGetAliveTimer();
+            client.Close();
         }
         else if (Headers.File.Substring(0, ("/content/WarShips/endGame").Length) == "/content/WarShips/endGame")
         {
@@ -239,6 +250,9 @@ class Client
         temp.lastActionTimer = new Timer(maxInactionTime);
         temp.lastActionTimer.Elapsed += (Object source, ElapsedEventArgs e) => RemovePlayer(playerIndex.currentPlayerIndex, true);
 
+        temp.aliveTimer = new Timer(maxAliveTime);
+        temp.aliveTimer.Elapsed += (Object source, ElapsedEventArgs e) => RemovePlayer(playerIndex.currentPlayerIndex, true);
+
         Server.AllPlayersInfo[playerIndex.currentPlayerIndex] = temp;
 
 
@@ -325,18 +339,21 @@ class Client
         Server.CurrentPlayerIndex? returnedId = JsonSerializer.Deserialize<Server.CurrentPlayerIndex>(playerId);
 
         int enemyId = AllPlayersInfo[returnedId.currentPlayerIndex].enemyIndex;
-        var temp = AllPlayersInfo[enemyId];
+        var enemy = AllPlayersInfo[enemyId];
 
-        if (temp.y != -1)
+        if (enemy.y != -1)
         {
-            SendSomeData(new Server.CellData() { playerId = enemyId, y = temp.y, x = temp.x }, client);
-            temp.y = -1;
-            temp.x = -1;
+            SendSomeData(new Server.CellData() { playerId = enemyId, y = enemy.y, x = enemy.x }, client);
+            enemy.y = -1;
+            enemy.x = -1;
             client.Close();
             AllPlayersInfo[returnedId.currentPlayerIndex].lastActionTimer.Start();
         }
         else
         {
+            Server.PlayerContent temp = AllPlayersInfo[returnedId.currentPlayerIndex];
+            temp.aliveTimer.Start();
+
             BattleInfo? tempBattleInfo = Server.AllBattleInfo.Find(battleInfo =>
                 battleInfo.Player1Id == returnedId.currentPlayerIndex ||
                 battleInfo.Player2Id == returnedId.currentPlayerIndex
@@ -367,6 +384,30 @@ class Client
         RemovePlayer(AllPlayersInfo[returnedId.currentPlayerIndex].enemyIndex, false);
         RemovePlayer(returnedId.currentPlayerIndex, false);
     }
+
+
+
+    private void OnGetAliveTimer()
+    {
+        var playerId = System.Web.HttpUtility.UrlDecode(Headers.File.Substring(("/content/WarShips/alive").Length + 1));
+        Server.CurrentPlayerIndex? returnedId = JsonSerializer.Deserialize<Server.CurrentPlayerIndex>(playerId);
+
+        AllPlayersInfo[returnedId.currentPlayerIndex].aliveTimer.Stop();
+        SendSomeData(new Server.SuccessFulOperation() { success = 1 }, client);
+        AllPlayersInfo[returnedId.currentPlayerIndex].aliveTimer.Start();
+    }
+
+
+
+
+    private void OnPlayerDisconnect()
+    {
+        var playerId = System.Web.HttpUtility.UrlDecode(Headers.File.Substring(("/content/WarShips/disconnect").Length + 1));
+        Server.CurrentPlayerIndex? returnedId = JsonSerializer.Deserialize<Server.CurrentPlayerIndex>(playerId);
+
+        RemovePlayer(returnedId.currentPlayerIndex, true);
+    }
+
 
 
 
