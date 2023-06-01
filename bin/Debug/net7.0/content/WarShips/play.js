@@ -4,6 +4,7 @@ let enemyShipsCount = 10;
 let myShipsCount = 10;
 let myShipCellsCount = 20;
 let isOppenetLeft = false;
+let sendindingTimeSleep = 300;
 
 let EnemyFieldMatrix = new Array(10);
 let AllEnemyCells = document.getElementsByClassName(`enemyBlock`);
@@ -24,46 +25,73 @@ async function StartGame() {
         var request = 'getPlayerId';
         playerId = await SendAjaxRequest(request);
 
-        request = 'getEnemyMatrix';
-        var clientResponseInfo = { playerId: playerId.currentPlayerIndex, fieldMatrix: MyFieldMatrix };
-        var clientResponse = JSON.stringify(clientResponseInfo);
-
         var darker = document.getElementById(`darker`);
         darker.style.visibility = `visible`;
-
         var darkerWriter = document.getElementById(`darkerWriter`);
         darkerWriter.innerText = `waiting for opponent`;
 
-        var returned = await SendAjaxRequest(request, clientResponse);
-        darker.style.visibility = `hidden`;
-        darkerWriter.innerText = ``;
+        request = 'getEnemyMatrix';
+        var clientResponseInfo = { playerId: playerId.currentPlayerIndex, fieldMatrix: MyFieldMatrix };
+        var clientResponse = JSON.stringify(clientResponseInfo);
+        var returned;
 
-        if (returned.playerId === -2) {
-            EnemyesFieldInit();
-            isBotPlay = true;
 
-            ShowYourTurn();
-        } else {
-            EnemyFieldMatrix = returned.fieldMatrix;
 
-            request = 'getMoveNumber';
-            var clientResponseInfo = { currentPlayerIndex: playerId.currentPlayerIndex };
-            var clientResponse = JSON.stringify(clientResponseInfo);
-            moveNumber = await SendAjaxRequest(request, clientResponse);
+        const MatrixGetPromise = new Promise(async function (resolve, reject) {
+            while (returned === undefined || returned.playerId === -4) {
+                returned = await SendAjaxRequest(request, clientResponse);
+                await sleep(sendindingTimeSleep);
+            };
+            if (returned !== undefined)
+                resolve(returned);
+            else
+                reject(-1);
+        });
 
-            if (moveNumber.moveNumber === 2)
-                GetEnemyClickedCell();
-            else {
-                ShowYourTurn();
-                SetActionTimer();
+
+        MatrixGetPromise.then(async function (returnedVal) {
+            if (returnedVal === -1) {
+                console.log("faild to load returned value");
+                return;
             }
-        }
+
+            darker.style.visibility = `hidden`;
+            darkerWriter.innerText = ``;
+
+            if (returnedVal.playerId === -2) {
+                EnemyesFieldInit();
+                isBotPlay = true;
+
+                ShowYourTurn();
+            } else {
+                EnemyFieldMatrix = returnedVal.fieldMatrix;
+
+                request = 'getMoveNumber';
+                var clientResponseInfo = { currentPlayerIndex: playerId.currentPlayerIndex };
+                var clientResponse = JSON.stringify(clientResponseInfo);
+                moveNumber = await SendAjaxRequest(request, clientResponse);
+
+                if (moveNumber.moveNumber === 2)
+                    GetEnemyClickedCell();
+                else {
+                    ShowYourTurn();
+                    SetActionTimer();
+                }
+            }
+        });
     }
 
 
     for (let i = 0; i < AllButtons.length; i++) {
         AllButtons[i].addEventListener(`click`, ButtonPressed);
     }
+}
+
+
+function sleep(ms) {
+    return new Promise(resolve => {
+        setTimeout(resolve, ms);
+    });
 }
 
 
@@ -156,45 +184,61 @@ async function GetEnemyClickedCell() {
     darker.style.visibility = `visible`;
     ShowEnemyTurn();
 
-    aliveTimer = setTimeout(SendAliveTimer(), 1000);``
+
+    var returned;
+    const MatrixGetPromise = new Promise(async function (resolve, reject) {
+        while (returned === undefined || returned.playerId === -4) {
+            returned = await SendAjaxRequest(requestURl, clientResponse);
+            await sleep(sendindingTimeSleep);
+        };
+        if (returned !== undefined)
+            resolve(returned);
+        else
+            reject(-1);
+    });
 
 
-    var returned = await SendAjaxRequest(requestURl, clientResponse);
-    if (returned.playerId === -3) {
-        var darkerWriter = document.getElementById(`darkerWriter`);
-        darkerWriter.innerText = `oppenent has left the game`;
+    MatrixGetPromise.then(async function (returnedVal) {
+        if (returnedVal === -1) {
+            console.log("faild to load returned value");
+            return;
+        }
+        if (returned.playerId === -3) {
+            var darkerWriter = document.getElementById(`darkerWriter`);
+            darkerWriter.innerText = `oppenent has left the game`;
 
-        var turn = document.getElementById(`turn`);
-        turn.style.visibility = `hidden`;
+            var turn = document.getElementById(`turn`);
+            turn.style.visibility = `hidden`;
 
-        setTimeout(StartEndGame(), 2000);
-        return;
-    }
-
-    var cell = document.getElementById(returned.y.toString() + returned.x.toString());
-
-    if (MyFieldMatrix[returned.y][returned.x] === States.ship) {
-        cell.getElementsByClassName(`got`)[0].style.visibility = `visible`;
-        MyFieldMatrix[returned.y][returned.x] = States.destroyed;
-        myShipCellsCount--;
-
-        if (myShipCellsCount === 0) {
-            await GameOver();
+            setTimeout(StartEndGame(), 2000);
             return;
         }
 
-        GetEnemyClickedCell();
-    }
-    else {
-        cell.getElementsByClassName(`missed`)[0].style.visibility = `visible`;
-        MyFieldMatrix[returned.y][returned.x] = States.missed;
-        darker.style.visibility = `hidden`;
+        var cell = document.getElementById(returned.y.toString() + returned.x.toString());
 
-        clearTimeout(aliveTimer);
+        if (MyFieldMatrix[returned.y][returned.x] === States.ship) {
+            cell.getElementsByClassName(`got`)[0].style.visibility = `visible`;
+            MyFieldMatrix[returned.y][returned.x] = States.destroyed;
+            myShipCellsCount--;
 
-        ShowYourTurn();
-        SetActionTimer();
-    }
+            if (myShipCellsCount === 0) {
+                await GameOver();
+                return;
+            }
+
+            GetEnemyClickedCell();
+        }
+        else {
+            cell.getElementsByClassName(`missed`)[0].style.visibility = `visible`;
+            MyFieldMatrix[returned.y][returned.x] = States.missed;
+            darker.style.visibility = `hidden`;
+
+            clearTimeout(aliveTimer);
+
+            ShowYourTurn();
+            SetActionTimer();
+        }
+    });
 }
 
 

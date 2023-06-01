@@ -24,9 +24,9 @@ class Server
     private Socket socketListener;
     private volatile CancellationTokenSource cancellationToken;
     private Thread? AcceptEventThread;
-    public static List<EndPoint> endPoints = new List<EndPoint>();
+
     public const int maxClients = 10;
-    public static List<BattleInfo> AllBattleInfo = new List<BattleInfo>(maxClients / 2);
+    // public static List<BattleInfo> AllBattleInfo = new List<BattleInfo>(maxClients / 2);
 
 
     public class CurrentPlayerIndex
@@ -62,7 +62,8 @@ class Server
     {
         public int enemyIndex;
         public int[][] fieldMatrix;
-        public Socket playerSocket;
+        // public Socket playerSocket;
+        public System.Timers.Timer waitingTimer;
         public System.Timers.Timer lastActionTimer;
         public System.Timers.Timer aliveTimer;
 
@@ -73,7 +74,8 @@ class Server
         {
             enemyIndex = -100,
             fieldMatrix = null,
-            playerSocket = null,
+            waitingTimer = null,
+            aliveTimer = null,
             lastActionTimer = null,
             y = -1,
             x = -1
@@ -93,7 +95,7 @@ class Server
             AllPlayersInfo[i] = PlayerContent.Default;
 
 
-        Client.watingTimer.Elapsed += (Object source, ElapsedEventArgs e) => Client.SendBot();
+        // Client.watingTimer.Elapsed += (Object source, ElapsedEventArgs e) => Client.SendBot();
 
         for (int i = 0; i < maxClients; i++)
             Client.allSutableIdes.Add(i);

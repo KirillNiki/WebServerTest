@@ -15,11 +15,12 @@ using System.Timers;
 
 class Client
 {
+    private const int errorId = -4;
     private const int enemyKickedId = -3;
     private const int botId = -2;
     private const int maxWaitingtime = 20000; //millisec
     private const int maxInactionTime = 40000; //millisec
-    private const int maxAliveTime = 2000; //millisec
+    private const int maxAliveTime = 6000; //millisec
     private const int fieldWidth = 10;
 
 
@@ -28,44 +29,46 @@ class Client
     HTTPHeaders Headers;
 
     private static Server.PlayerContent[] AllPlayersInfo = Server.AllPlayersInfo;
-    private static int waiterId = -1;
-    public static Timer watingTimer = new Timer(maxWaitingtime);
+    private static (int, int) waiterIds = new(-1, -1);
+    private static bool isSendBot;
+
+    // public static Timer watingTimer = new Timer(maxWaitingtime);
 
 
-    private static List<NewClientConnected> newClientDelegates = new List<NewClientConnected>();
-    private delegate void NewClientConnected();
-    private static event NewClientConnected? newClientConnectedReal;
+    // private static List<NewClientConnected> newClientDelegates = new List<NewClientConnected>();
+    // private delegate void NewClientConnected();
+    // private static event NewClientConnected? newClientConnectedReal;
 
-    private static event NewClientConnected? newClientConnected
-    {
-        add
-        {
-            newClientConnectedReal += value;
-            newClientDelegates.Add(value);
-        }
-        remove
-        {
-            newClientConnectedReal -= value;
-            newClientDelegates.Remove(value);
-        }
-    }
+    // private static event NewClientConnected? newClientConnected
+    // {
+    //     add
+    //     {
+    //         newClientConnectedReal += value;
+    //         newClientDelegates.Add(value);
+    //     }
+    //     remove
+    //     {
+    //         newClientConnectedReal -= value;
+    //         newClientDelegates.Remove(value);
+    //     }
+    // }
 
-    private static List<OnsendCell> sendCellDelegates = new List<OnsendCell>();
-    public delegate void OnsendCell();
-    private static event OnsendCell? onsendCellReal;
-    private static event OnsendCell? onsendCell
-    {
-        add
-        {
-            onsendCellReal += value;
-            sendCellDelegates.Add(value);
-        }
-        remove
-        {
-            onsendCellReal -= value;
-            sendCellDelegates.Remove(value);
-        }
-    }
+    // private static List<OnsendCell> sendCellDelegates = new List<OnsendCell>();
+    // public delegate void OnsendCell();
+    // private static event OnsendCell? onsendCellReal;
+    // private static event OnsendCell? onsendCell
+    // {
+    //     add
+    //     {
+    //         onsendCellReal += value;
+    //         sendCellDelegates.Add(value);
+    //     }
+    //     remove
+    //     {
+    //         onsendCellReal -= value;
+    //         sendCellDelegates.Remove(value);
+    //     }
+    // }
 
     public static List<int> allSutableIdes = new List<int>(Server.maxClients);
 
@@ -110,6 +113,7 @@ class Client
         else if (Headers.File.Substring(0, ("/content/WarShips/getEnemyMatrix").Length) == "/content/WarShips/getEnemyMatrix")
         {
             FindEnemy();
+            client.Close();
         }
         else if (Headers.File.Substring(0, ("/content/WarShips/getMoveNumber").Length) == "/content/WarShips/getMoveNumber")
         {
@@ -124,17 +128,18 @@ class Client
         else if (Headers.File.Substring(0, ("/content/WarShips/clickedCellByEnemy").Length) == "/content/WarShips/clickedCellByEnemy")
         {
             GetEnemyClickedCell();
+            client.Close();
         }
         // else if (Headers.File.Substring(0, ("/content/WarShips/disconnect").Length) == "/content/WarShips/disconnect")
         // {
         //     OnPlayerDisconnect();
         //     client.Close();
         // }
-        else if (Headers.File.Substring(0, ("/content/WarShips/alive").Length) == "/content/WarShips/alive")
-        {
-            OnGetAliveTimer();
-            client.Close();
-        }
+        // else if (Headers.File.Substring(0, ("/content/WarShips/alive").Length) == "/content/WarShips/alive")
+        // {
+        //     // OnGetAliveTimer();
+        //     client.Close();
+        // }
         else if (Headers.File.Substring(0, ("/content/WarShips/endGame").Length) == "/content/WarShips/endGame")
         {
             EndGame();
@@ -151,10 +156,11 @@ class Client
 
     private void SendPlayerId()
     {
-        SendSomeData(new Server.CurrentPlayerIndex { currentPlayerIndex = allSutableIdes[0] }, client);
+        int playerIndex = allSutableIdes[0];
+        SendSomeData(new Server.CurrentPlayerIndex { currentPlayerIndex = playerIndex }, client);
 
-        AllPlayersInfo[allSutableIdes[0]] = new Server.PlayerContent { enemyIndex = -1 };
-        Server.PlayerContent temp = AllPlayersInfo[allSutableIdes[0]];
+        AllPlayersInfo[playerIndex] = new Server.PlayerContent { enemyIndex = -1 };
+        Server.PlayerContent temp = AllPlayersInfo[playerIndex];
         temp.fieldMatrix = new int[fieldWidth][];
         for (int i = 0; i < temp.fieldMatrix.Length; i++)
         {
@@ -162,8 +168,17 @@ class Client
         }
         temp.y = -1;
         temp.x = -1;
+        temp.aliveTimer = new Timer(maxAliveTime);
+        temp.aliveTimer.Elapsed += (Object source, ElapsedEventArgs e) =>
+        {
+            Console.WriteLine("aliveTimer Elapsed");
+            RemovePlayer(playerIndex);
+        };
 
-        AllPlayersInfo[allSutableIdes[0]] = temp;
+        temp.waitingTimer = new Timer(maxWaitingtime);
+        temp.waitingTimer.Elapsed += (Object source, ElapsedEventArgs e) => { isSendBot = true; };
+
+        AllPlayersInfo[playerIndex] = temp;
         allSutableIdes.RemoveAt(0);
     }
 
@@ -173,71 +188,104 @@ class Client
     {
         var playerInfo = System.Web.HttpUtility.UrlDecode(Headers.File.Substring(("/content/WarShips/getEnemyMatrix").Length + 1));
         Server.MatrixData? returnedMatrixData = JsonSerializer.Deserialize<Server.MatrixData>(playerInfo);
+        int playerId = returnedMatrixData.playerId;
 
-        Array.Copy(returnedMatrixData.fieldMatrix, AllPlayersInfo[returnedMatrixData.playerId].fieldMatrix
-                    , returnedMatrixData.fieldMatrix.Length);
-
-
-        Server.PlayerContent temp = AllPlayersInfo[returnedMatrixData.playerId];
-        temp.playerSocket = client;
-        AllPlayersInfo[returnedMatrixData.playerId] = temp;
+        Server.PlayerContent temp = AllPlayersInfo[playerId];
+        Array.Copy(returnedMatrixData.fieldMatrix, temp.fieldMatrix, returnedMatrixData.fieldMatrix.Length);
+        temp.aliveTimer.Stop();
+        temp.aliveTimer.Start();
 
 
-        if (waiterId == -1)
+        if (isSendBot)
         {
-            waiterId = returnedMatrixData.playerId;
-            newClientConnected += () => GetSendMatrix(waiterId, AllPlayersInfo[waiterId].playerSocket);
-
-            watingTimer.Start();
+            isSendBot = false;
+            SendBot();
         }
         else
         {
-            watingTimer.Stop();
-
-            newClientConnectedReal?.Invoke();
-            for (int i = 0; i < newClientDelegates.Count; i++)
-                newClientConnected -= newClientDelegates[i];
-
-            GetSendMatrix(returnedMatrixData.playerId, AllPlayersInfo[returnedMatrixData.playerId].playerSocket, waiterId);
-
-            Server.AllBattleInfo.Add(new BattleInfo(returnedMatrixData.playerId, AllPlayersInfo[returnedMatrixData.playerId].enemyIndex));
-            waiterId = -1;
-        }
-    }
-
-
-
-    private void GetSendMatrix(int playerId, Socket currentClient, int freePlayerId = -1)
-    {
-        Server.PlayerContent freePlayer = new Server.PlayerContent();
-        Server.PlayerContent temp = AllPlayersInfo[playerId];
-
-        if (freePlayerId == -1)
-        {
-            for (int i = 0; i < AllPlayersInfo.Length; i++)
+            if (waiterIds.Item1 == -1)
             {
-                if (!AllPlayersInfo[i].Equals(Server.PlayerContent.Default) && i != playerId && AllPlayersInfo[i].enemyIndex == -1)
+                waiterIds.Item1 = playerId;
+                SendSomeData(new Server.MatrixData() { playerId = errorId }, client);
+                temp.waitingTimer.Start();
+            }
+            else
+            {
+                if (waiterIds.Item1 == playerId && waiterIds.Item2 != -1)
                 {
-                    freePlayer = AllPlayersInfo[i];
-                    freePlayerId = i;
+                    temp.enemyIndex = waiterIds.Item2;
+                    SendSomeData(new Server.MatrixData() { playerId = temp.enemyIndex, fieldMatrix = AllPlayersInfo[temp.enemyIndex].fieldMatrix }, client);
+                }
+                else if (waiterIds.Item1 != playerId)
+                {
+                    waiterIds.Item2 = playerId;
+                    temp.enemyIndex = waiterIds.Item1;
+                    SendSomeData(new Server.MatrixData() { playerId = temp.enemyIndex, fieldMatrix = AllPlayersInfo[temp.enemyIndex].fieldMatrix }, client);
+                }
+                else
+                {
+                    SendSomeData(new Server.MatrixData() { playerId = errorId }, client);
+                }
+                AllPlayersInfo[playerId] = temp;
 
-                    temp.enemyIndex = i;
-                    AllPlayersInfo[playerId] = temp;
-                    break;
+
+                if (temp.enemyIndex != -1 &&
+                    temp.enemyIndex + AllPlayersInfo[temp.enemyIndex].enemyIndex == waiterIds.Item1 + waiterIds.Item2)
+                {
+                    AllPlayersInfo[waiterIds.Item1].waitingTimer.Stop();
+                    AllPlayersInfo[waiterIds.Item1].aliveTimer.Stop();
+
+                    AllPlayersInfo[waiterIds.Item2].waitingTimer.Stop();
+                    AllPlayersInfo[waiterIds.Item2].aliveTimer.Stop();
+
+                    waiterIds.Item1 = -1;
+                    waiterIds.Item2 = -1;
+
+
+                    for (int i = 0; i < AllPlayersInfo.Length; i++)
+                    {
+                        Console.WriteLine($">>>>>>>>>>>>>>{i}<<<<<<<{AllPlayersInfo[i].enemyIndex}");
+                    }
                 }
             }
         }
-        else
-        {
-            freePlayer = AllPlayersInfo[freePlayerId];
 
-            temp.enemyIndex = freePlayerId;
-            AllPlayersInfo[playerId] = temp;
-        }
-
-        SendSomeData(new Server.MatrixData() { playerId = freePlayerId, fieldMatrix = freePlayer.fieldMatrix }, currentClient);
-        currentClient.Close();
+        Console.WriteLine($"{waiterIds.Item1}______________{waiterIds.Item2}");
     }
+
+
+
+    // private void GetSendMatrix(int playerId, Socket currentClient, int freePlayerId = -1)
+    // {
+    //     Server.PlayerContent freePlayer = new Server.PlayerContent();
+    //     Server.PlayerContent temp = AllPlayersInfo[playerId];
+
+    //     if (freePlayerId == -1)
+    //     {
+    //         for (int i = 0; i < AllPlayersInfo.Length; i++)
+    //         {
+    //             if (!AllPlayersInfo[i].Equals(Server.PlayerContent.Default) && i != playerId && AllPlayersInfo[i].enemyIndex == -1)
+    //             {
+    //                 freePlayer = AllPlayersInfo[i];
+    //                 freePlayerId = i;
+
+    //                 temp.enemyIndex = i;
+    //                 AllPlayersInfo[playerId] = temp;
+    //                 break;
+    //             }
+    //         }
+    //     }
+    //     else
+    //     {
+    //         freePlayer = AllPlayersInfo[freePlayerId];
+
+    //         temp.enemyIndex = freePlayerId;
+    //         AllPlayersInfo[playerId] = temp;
+    //     }
+
+    //     SendSomeData(new Server.MatrixData() { playerId = freePlayerId, fieldMatrix = freePlayer.fieldMatrix }, currentClient);
+    //     currentClient.Close();
+    // }
 
 
 
@@ -248,11 +296,11 @@ class Client
 
         Server.PlayerContent temp = Server.AllPlayersInfo[playerIndex.currentPlayerIndex];
         temp.lastActionTimer = new Timer(maxInactionTime);
-        temp.lastActionTimer.Elapsed += (Object source, ElapsedEventArgs e) => RemovePlayer(playerIndex.currentPlayerIndex, true);
-
-        temp.aliveTimer = new Timer(maxAliveTime);
-        temp.aliveTimer.Elapsed += (Object source, ElapsedEventArgs e) => RemovePlayer(playerIndex.currentPlayerIndex, true);
-
+        temp.lastActionTimer.Elapsed += (Object source, ElapsedEventArgs e) =>
+        {
+            Console.WriteLine("lastActionTimer Elapsed");
+            RemovePlayer(playerIndex.currentPlayerIndex);
+        };
         Server.AllPlayersInfo[playerIndex.currentPlayerIndex] = temp;
 
 
@@ -270,40 +318,57 @@ class Client
 
 
 
-    private static void RemovePlayer(int playerId, bool isKicked)
+    private void RemovePlayer(int playerId)
     {
-        if (isKicked)
+        for (int i = 0; i < AllPlayersInfo.Length; i++)
         {
-            var enenmyId = AllPlayersInfo[playerId].enemyIndex;
-            SendSomeData(new Server.CellData() { playerId = enemyKickedId }, AllPlayersInfo[enenmyId].playerSocket);
-
-            RemovePlayer(enenmyId, false);
-
-            BattleInfo? tempBattleInfo = Server.AllBattleInfo.Find(battleInfo => battleInfo.Player1Id == enenmyId ||
-                                                                                 battleInfo.Player2Id == enenmyId);
-            onsendCell -= tempBattleInfo.SendClickedCellToPlayer1;
-            onsendCell -= tempBattleInfo.SendClickedCellToPlayer2;
-            Server.AllBattleInfo.Remove(tempBattleInfo);
+            Console.WriteLine(AllPlayersInfo[i].enemyIndex);
         }
 
         var temp = AllPlayersInfo[playerId];
-        temp.playerSocket.Close();
+        // if (temp.enemyIndex != -1 && isKicked)
+        // {
+        //     Console.WriteLine("jjjjjjjjjjjjjjjj1");
+        //     var enenmyId = temp.enemyIndex;
+        //     SendSomeData(new Server.CellData() { playerId = enemyKickedId }, client);
+        //     Console.WriteLine("jjjjjjjjjjjjjjjj2");
+        //     RemovePlayer(enenmyId, false);
+        //     Console.WriteLine("jjjjjjjjjjjjjjjj3");
+        // }
+        Console.WriteLine(">>>>>>>>>>>>>>>>>>>>>>2");
+
+        if (temp.aliveTimer != null) temp.aliveTimer.Close();
+        Console.WriteLine(">>>>>>>>>>>>>>>>>>>>>>21");
+        if (temp.lastActionTimer != null) temp.lastActionTimer.Close();
+        Console.WriteLine(">>>>>>>>>>>>>>>>>>>>>>22");
+        if (temp.waitingTimer != null) temp.waitingTimer.Close();
+        Console.WriteLine(">>>>>>>>>>>>>>>>>>>>>>23");
+
         temp = Server.PlayerContent.Default;
         AllPlayersInfo[playerId] = temp;
-
         allSutableIdes.Add(playerId);
+        Console.WriteLine(">>>>>>>>>>>>>>>>>>>>>>3");
+
+        for (int i = 0; i < AllPlayersInfo.Length; i++)
+        {
+            Console.WriteLine(AllPlayersInfo[i].enemyIndex);
+        }
     }
 
 
 
-    public static void SendBot()
+    public void SendBot()
     {
-        Socket clientSocket = Server.AllPlayersInfo[waiterId].playerSocket;
-        SendSomeData(new Server.MatrixData() { playerId = botId }, clientSocket);
+        Console.WriteLine("SendBot");
 
-        watingTimer.Stop();
-        RemovePlayer(waiterId, false);
-        waiterId = -1;
+        Console.WriteLine("<<<<<<<<<<<<<<<<<<<<1");
+        SendSomeData(new Server.MatrixData() { playerId = botId }, client);
+        Console.WriteLine("<<<<<<<<<<<<<<<<<<<<2");
+
+        Console.WriteLine("<<<<<<<<<<<<<<<<<<<<3");
+        RemovePlayer(waiterIds.Item1);
+        Console.WriteLine("<<<<<<<<<<<<<<<<<<<<4");
+        waiterIds.Item1 = -1;
     }
 
 
@@ -317,18 +382,11 @@ class Client
         temp.y = returnedCellData.y;
         temp.x = returnedCellData.x;
         temp.lastActionTimer.Stop();
+        temp.lastActionTimer.Start();
+        temp.aliveTimer.Stop();
 
         AllPlayersInfo[returnedCellData.playerId] = temp;
-
-
         SendSomeData(new Server.SuccessFulOperation() { success = 1 }, client);
-        onsendCellReal?.Invoke();
-        BattleInfo? tempBattleInfo = Server.AllBattleInfo.Find(battleInfo =>
-            battleInfo.Player1Id == returnedCellData.playerId ||
-            battleInfo.Player2Id == returnedCellData.playerId
-        );
-        onsendCell -= tempBattleInfo.SendClickedCellToPlayer1;
-        onsendCell -= tempBattleInfo.SendClickedCellToPlayer2;
     }
 
 
@@ -338,32 +396,27 @@ class Client
         var playerId = System.Web.HttpUtility.UrlDecode(Headers.File.Substring(("/content/WarShips/clickedCellByEnemy").Length + 1));
         Server.CurrentPlayerIndex? returnedId = JsonSerializer.Deserialize<Server.CurrentPlayerIndex>(playerId);
 
-        int enemyId = AllPlayersInfo[returnedId.currentPlayerIndex].enemyIndex;
+        var temp = AllPlayersInfo[returnedId.currentPlayerIndex];
+        int enemyId = temp.enemyIndex;
         var enemy = AllPlayersInfo[enemyId];
+
+        temp.lastActionTimer.Stop();
+        temp.aliveTimer.Stop();
 
         if (enemy.y != -1)
         {
             SendSomeData(new Server.CellData() { playerId = enemyId, y = enemy.y, x = enemy.x }, client);
             enemy.y = -1;
             enemy.x = -1;
-            client.Close();
-            AllPlayersInfo[returnedId.currentPlayerIndex].lastActionTimer.Start();
         }
         else
         {
-            Server.PlayerContent temp = AllPlayersInfo[returnedId.currentPlayerIndex];
-            temp.aliveTimer.Start();
-
-            BattleInfo? tempBattleInfo = Server.AllBattleInfo.Find(battleInfo =>
-                battleInfo.Player1Id == returnedId.currentPlayerIndex ||
-                battleInfo.Player2Id == returnedId.currentPlayerIndex
-            );
-
-            onsendCell += tempBattleInfo.SendClickedCellToPlayer1;
-            onsendCell += tempBattleInfo.SendClickedCellToPlayer2;
-
-            AllPlayersInfo[returnedId.currentPlayerIndex].playerSocket = client;
+            SendSomeData(new Server.CellData() { playerId = errorId, y = -1, x = -1 }, client);
         }
+
+        temp.aliveTimer.Start();
+        AllPlayersInfo[returnedId.currentPlayerIndex] = temp;
+        AllPlayersInfo[enemyId] = enemy;
     }
 
 
@@ -373,40 +426,40 @@ class Client
         var playerId = System.Web.HttpUtility.UrlDecode(Headers.File.Substring(("/content/WarShips/endGame").Length + 1));
         Server.CurrentPlayerIndex? returnedId = JsonSerializer.Deserialize<Server.CurrentPlayerIndex>(playerId);
 
-        SendSomeData(new Server.SuccessFulOperation() { success = 1 }, client);
+        // SendSomeData(new Server.SuccessFulOperation() { success = 1 }, client);
 
-        BattleInfo? tempBattleInfo = Server.AllBattleInfo.Find(battleInfo =>
-            battleInfo.Player1Id == returnedId.currentPlayerIndex ||
-            battleInfo.Player2Id == returnedId.currentPlayerIndex
-        );
+        // BattleInfo? tempBattleInfo = Server.AllBattleInfo.Find(battleInfo =>
+        //     battleInfo.Player1Id == returnedId.currentPlayerIndex ||
+        //     battleInfo.Player2Id == returnedId.currentPlayerIndex
+        // );
 
-        Server.AllBattleInfo.Remove(tempBattleInfo);
-        RemovePlayer(AllPlayersInfo[returnedId.currentPlayerIndex].enemyIndex, false);
-        RemovePlayer(returnedId.currentPlayerIndex, false);
+        // Server.AllBattleInfo.Remove(tempBattleInfo);
+        // RemovePlayer(AllPlayersInfo[returnedId.currentPlayerIndex].enemyIndex, false);
+        // RemovePlayer(returnedId.currentPlayerIndex, false);
     }
 
 
 
-    private void OnGetAliveTimer()
-    {
-        var playerId = System.Web.HttpUtility.UrlDecode(Headers.File.Substring(("/content/WarShips/alive").Length + 1));
-        Server.CurrentPlayerIndex? returnedId = JsonSerializer.Deserialize<Server.CurrentPlayerIndex>(playerId);
+    // private void OnGetAliveTimer()
+    // {
+    //     var playerId = System.Web.HttpUtility.UrlDecode(Headers.File.Substring(("/content/WarShips/alive").Length + 1));
+    //     Server.CurrentPlayerIndex? returnedId = JsonSerializer.Deserialize<Server.CurrentPlayerIndex>(playerId);
 
-        AllPlayersInfo[returnedId.currentPlayerIndex].aliveTimer.Stop();
-        SendSomeData(new Server.SuccessFulOperation() { success = 1 }, client);
-        AllPlayersInfo[returnedId.currentPlayerIndex].aliveTimer.Start();
-    }
-
-
+    //     AllPlayersInfo[returnedId.currentPlayerIndex].aliveTimer.Stop();
+    //     SendSomeData(new Server.SuccessFulOperation() { success = 1 }, client);
+    //     AllPlayersInfo[returnedId.currentPlayerIndex].aliveTimer.Start();
+    // }
 
 
-    private void OnPlayerDisconnect()
-    {
-        var playerId = System.Web.HttpUtility.UrlDecode(Headers.File.Substring(("/content/WarShips/disconnect").Length + 1));
-        Server.CurrentPlayerIndex? returnedId = JsonSerializer.Deserialize<Server.CurrentPlayerIndex>(playerId);
 
-        RemovePlayer(returnedId.currentPlayerIndex, true);
-    }
+
+    // private void OnPlayerDisconnect()
+    // {
+    //     var playerId = System.Web.HttpUtility.UrlDecode(Headers.File.Substring(("/content/WarShips/disconnect").Length + 1));
+    //     Server.CurrentPlayerIndex? returnedId = JsonSerializer.Deserialize<Server.CurrentPlayerIndex>(playerId);
+
+    //     RemovePlayer(returnedId.currentPlayerIndex, true);
+    // }
 
 
 
