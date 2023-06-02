@@ -17,7 +17,6 @@ class Server
 
     private bool active;
     private HttpListener httpListener;
-    private Thread? AcceptThread;
     public const int maxClients = 10;
 
 
@@ -28,7 +27,6 @@ class Server
     {
         public int enemyIndex;
         public int[][] fieldMatrix;
-        // public Socket playerSocket;
         public System.Timers.Timer waitingTimer;
         public System.Timers.Timer lastActionTimer;
         public System.Timers.Timer aliveTimer;
@@ -65,7 +63,7 @@ class Server
         for (int i = 0; i < maxClients; i++)
             allSutableIdes.Add(i);
 
-        Console.WriteLine(">>>>>>>>>>>");
+        Console.WriteLine(">>>>>>>>>>>1");
     }
 
 
@@ -77,10 +75,7 @@ class Server
             httpListener.Start();
             active = true;
 
-            // this.AcceptThread = new Thread(() => Listening());
-            // AcceptThread.Start();
             Listening();
-            Console.WriteLine(">>>>>>>>>>>1");
         }
         else
         {
@@ -101,13 +96,13 @@ class Server
                 Console.WriteLine(">>>>>>>>>>>2222");
                 if (request.Request.IsWebSocketRequest)
                 {
-                    Console.WriteLine(">>>>>>>>>>>23333");
+                    Console.WriteLine(">>>>>>>>>>>2333");
                 }
                 else
                 {
-                    Console.WriteLine(">>>>>>>>>>>25555");
+                    Console.WriteLine(">>>>>>>>>>>2444");
                     new GetWebPage(httpListener, request);
-                    Console.WriteLine(">>>>>>>>>>>21111");
+                    Console.WriteLine(">>>>>>>>>>>2555");
                 }
                 Console.WriteLine(">>>>>>>>>>>3");
             }

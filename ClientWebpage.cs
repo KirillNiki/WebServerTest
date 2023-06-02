@@ -66,12 +66,15 @@ class GetWebPage
     public async void SendError(int code)
     {
         string html = $"<html><head><title></title></head><body><h1>Error {code}</h1></body></html>";
-        string headers = $"HTTP/1.1 {code} OK\nContent-type: text/html\nContent-Length: {html.Length}\n\n{html}";
-        byte[] data = Encoding.UTF8.GetBytes(headers);
+        byte[] data = Encoding.UTF8.GetBytes(html);
 
         response.ContentLength64 = data.Length;
+        response.ContentType = "text/html";
+        response.StatusCode = code;
+
         await output.WriteAsync(data);
         await output.FlushAsync();
+        output.Close();
     }
 
 
@@ -84,11 +87,16 @@ class GetWebPage
             FileStream fs = new FileStream(Headers.RealPath, FileMode.Open, FileAccess.Read, FileShare.Read);
             byte[] data = new byte[fs.Length];
             fs.Read(data, 0, data.Length);
-            
+            fs.Close();
+
             response.ContentType = contentType;
+            response.StatusCode = (int) HttpStatusCode.OK;
             response.ContentLength64 = data.Length;
+            Console.WriteLine(contentType);
+
             await output.WriteAsync(data);
             await output.FlushAsync();
+            output.Close();
         }
         catch (Exception ex)
         {
