@@ -5,59 +5,25 @@ using System.Threading;
 using System.Threading.Tasks;
 using System.Net;
 using System.Net.Sockets;
+using System.Net.WebSockets;
 
 using System.Timers;
 
 class Server
 {
-    public static string onlineFilePath = @"bin/Debug/net7.0/content/WarShips/online.json";
-
-    public EndPoint IP { get { return ip; } }
-    private EndPoint ip;
-
-    public int Port { get { return port; } }
+    private EndPoint? ip;
     private int port;
 
-    public bool Active { get { return active; } }
+
     private bool active;
-
-    private Socket socketListener;
-    private volatile CancellationTokenSource cancellationToken;
-    private Thread? AcceptEventThread;
-
+    private HttpListener httpListener;
+    private Thread? AcceptThread;
     public const int maxClients = 10;
-    // public static List<BattleInfo> AllBattleInfo = new List<BattleInfo>(maxClients / 2);
 
 
-    public class CurrentPlayerIndex
-    {
-        public int currentPlayerIndex { get; set; }
-    }
-
-    public class MatrixData
-    {
-        public int playerId { get; set; }
-        public int[][]? fieldMatrix { get; set; }
-    }
-
-    public class CellData
-    {
-        public int playerId { get; set; }
-        public int y { get; set; }
-        public int x { get; set; }
-    }
-
-    public class SuccessFulOperation
-    {
-        public int success { get; set; }
-    }
-
-    public class MoveNumber
-    {
-        public int moveNumber { get; set; }
-    }
 
     public static PlayerContent[] AllPlayersInfo = new PlayerContent[maxClients];
+    public static List<int> allSutableIdes = new List<int>(maxClients);
     public struct PlayerContent
     {
         public int enemyIndex;
@@ -73,10 +39,10 @@ class Server
         public static PlayerContent Default => new PlayerContent()
         {
             enemyIndex = -100,
-            fieldMatrix = null,
-            waitingTimer = null,
-            aliveTimer = null,
-            lastActionTimer = null,
+            fieldMatrix = new int[0][],
+            waitingTimer = new System.Timers.Timer(),
+            aliveTimer = new System.Timers.Timer(),
+            lastActionTimer = new System.Timers.Timer(),
             y = -1,
             x = -1
         };
@@ -88,30 +54,33 @@ class Server
     {
         this.port = port;
         this.ip = new IPEndPoint(IPAddress.Parse(GetLocalIPAddress()), port);
-        this.socketListener = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp);
-        this.cancellationToken = new CancellationTokenSource();
+        Console.WriteLine(ip);
+
+        this.httpListener = new HttpListener();
+        this.httpListener.Prefixes.Add($"http://{ip}/");
 
         for (int i = 0; i < AllPlayersInfo.Length; i++)
             AllPlayersInfo[i] = PlayerContent.Default;
 
-
-        // Client.watingTimer.Elapsed += (Object source, ElapsedEventArgs e) => Client.SendBot();
-
         for (int i = 0; i < maxClients; i++)
-            Client.allSutableIdes.Add(i);
+            allSutableIdes.Add(i);
+
+        Console.WriteLine(">>>>>>>>>>>");
     }
+
 
 
     public void Start()
     {
         if (!active)
         {
-            socketListener.Bind(ip);
-            socketListener.Listen(maxClients);
+            httpListener.Start();
             active = true;
 
-            this.AcceptEventThread = new Thread(() => ListeningSocket());
-            AcceptEventThread.Start();
+            // this.AcceptThread = new Thread(() => Listening());
+            // AcceptThread.Start();
+            Listening();
+            Console.WriteLine(">>>>>>>>>>>1");
         }
         else
         {
@@ -120,41 +89,35 @@ class Server
     }
 
 
-    public void Stop()
-    {
-        if (active)
-        {
-            socketListener.Close();
-            cancellationToken.Cancel();
-            active = false;
-        }
-        else
-        {
-            Console.WriteLine("Server was stoped");
-        }
-    }
 
-
-    private void ListeningSocket()
+    private void Listening()
     {
         while (active)
         {
-            Socket listenerAccept = socketListener.Accept();
-            if (listenerAccept != null)
+            try
             {
-                Task.Run(
-                    () => ClientThread(listenerAccept),
-                    cancellationToken.Token
-                );
+                Console.WriteLine(">>>>>>>>>>>2");
+                var request = httpListener.GetContext();
+                Console.WriteLine(">>>>>>>>>>>2222");
+                if (request.Request.IsWebSocketRequest)
+                {
+                    Console.WriteLine(">>>>>>>>>>>23333");
+                }
+                else
+                {
+                    Console.WriteLine(">>>>>>>>>>>25555");
+                    new GetWebPage(httpListener, request);
+                    Console.WriteLine(">>>>>>>>>>>21111");
+                }
+                Console.WriteLine(">>>>>>>>>>>3");
+            }
+            catch (Exception e)
+            {
+                Console.WriteLine(e);
             }
         }
     }
 
-
-    public void ClientThread(Socket socket)
-    {
-        new Client(socket);
-    }
 
 
     public static string GetLocalIPAddress()
