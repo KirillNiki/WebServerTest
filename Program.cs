@@ -12,11 +12,12 @@ class Connection
 {
     private static Server? server;
     private static int port = 9000;
+    private static int maxClients = 10;
 
 
     private static void Main()
     {
-        server = new Server(port);
+        server = new Server(port, maxClients);
         server.Start();
     }
 }

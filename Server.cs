@@ -11,59 +11,52 @@ using System.Timers;
 
 class Server
 {
+    private const int maxWaitingtime = 20000; //millisec
+
+
     private EndPoint? ip;
     private int port;
 
 
     private bool active;
     private HttpListener httpListener;
-    public const int maxClients = 10;
+    private static int maxClients;
 
 
+    public static List<int> allSutableIdes = new List<int>(0);
+    public static Client[] AllCients = new Client[0];
 
-    public static PlayerContent[] AllPlayersInfo = new PlayerContent[maxClients];
-    public static List<int> allSutableIdes = new List<int>(maxClients);
-    public struct PlayerContent
+
+    public static System.Timers.Timer waitingTimer = new System.Timers.Timer(maxWaitingtime);
+    public static bool isSendBot = false;
+    public static int waiterId = -1;
+    
+
+
+    public enum CellState { missed, got, none };
+    public struct ClickedCellInfo
     {
-        public int enemyIndex;
-        public int[][] fieldMatrix;
-        public System.Timers.Timer waitingTimer;
-        public System.Timers.Timer lastActionTimer;
-        public System.Timers.Timer aliveTimer;
-
         public int y;
         public int x;
-
-        public static PlayerContent Default => new PlayerContent()
-        {
-            enemyIndex = -100,
-            fieldMatrix = new int[0][],
-            waitingTimer = new System.Timers.Timer(),
-            aliveTimer = new System.Timers.Timer(),
-            lastActionTimer = new System.Timers.Timer(),
-            y = -1,
-            x = -1
-        };
+        public CellState cellState;
     }
 
 
 
-    public Server(int port)
+    public Server(int port, int maxClientsCount)
     {
         this.port = port;
         this.ip = new IPEndPoint(IPAddress.Parse(GetLocalIPAddress()), port);
         Console.WriteLine(ip);
+        maxClients = maxClientsCount;
 
         this.httpListener = new HttpListener();
         this.httpListener.Prefixes.Add($"http://{ip}/");
 
-        for (int i = 0; i < AllPlayersInfo.Length; i++)
-            AllPlayersInfo[i] = PlayerContent.Default;
-
+        AllCients = new Client[maxClients];
+        allSutableIdes = new List<int>(maxClients);
         for (int i = 0; i < maxClients; i++)
             allSutableIdes.Add(i);
-
-        Console.WriteLine(">>>>>>>>>>>1");
     }
 
 
@@ -85,26 +78,26 @@ class Server
 
 
 
-    private void Listening()
+    private async void Listening()
     {
         while (active)
         {
             try
             {
-                Console.WriteLine(">>>>>>>>>>>2");
                 var request = httpListener.GetContext();
-                Console.WriteLine(">>>>>>>>>>>2222");
                 if (request.Request.IsWebSocketRequest)
                 {
-                    Console.WriteLine(">>>>>>>>>>>2333");
+                    Console.WriteLine(">>>>>>>>>>> webSocket connected");
+                    HttpListenerWebSocketContext webSocketContext = await request.AcceptWebSocketAsync(null);
+                    WebSocket webSocket = webSocketContext.WebSocket;
+
+                    new Client(webSocket);
                 }
                 else
                 {
-                    Console.WriteLine(">>>>>>>>>>>2444");
+                    Console.WriteLine(">>>>>>>>>>> page was sent");
                     new GetWebPage(httpListener, request);
-                    Console.WriteLine(">>>>>>>>>>>2555");
                 }
-                Console.WriteLine(">>>>>>>>>>>3");
             }
             catch (Exception e)
             {

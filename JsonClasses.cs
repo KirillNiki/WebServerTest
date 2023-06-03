@@ -1,14 +1,14 @@
 namespace ServerConnection;
 
-class CurrentPlayerIndex
+class PlayerIndex
 {
-    public int currentPlayerIndex { get; set; }
+    public int playerId { get; set; }
 }
 
 class MatrixData
 {
     public int playerId { get; set; }
-    public int[][]? fieldMatrix { get; set; }
+    public int[][] fieldMatrix { get; set; }
 }
 
 class CellData

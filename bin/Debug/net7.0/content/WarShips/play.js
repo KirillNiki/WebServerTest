@@ -14,6 +14,23 @@ let isBotPlay = false;
 var playerId;
 var moveNumber;
 
+
+let webSocket;
+let domain = "192.168.0.53:9000";
+let isConnected = false;
+
+
+
+const terminationEvent = 'onpagehide' in self ? 'pagehide' : 'unload';
+window.addEventListener(terminationEvent, (event) => {
+    if (isConnected && webSocket.readyState === WebSocket.OPEN && event.persisted === false) {
+        socket.onclose = function () { };
+        socket.close();
+    }
+});
+
+
+
 async function StartGame() {
     let AllButtons = document.getElementsByClassName(`button`);
 
@@ -22,62 +39,87 @@ async function StartGame() {
         ShowYourTurn();
     }
     else {
-        var request = 'getPlayerId';
-        playerId = await SendAjaxRequest(request);
+        webSocket = new WebSocket(`ws://${domain}/`);
+        isConnected = true;
 
-        var darker = document.getElementById(`darker`);
-        darker.style.visibility = `visible`;
-        var darkerWriter = document.getElementById(`darkerWriter`);
-        darkerWriter.innerText = `waiting for opponent`;
+        var request = "getPlayerId/";
+        var waitForConnection = new Promise(async function (resolve, reject) {
+            var done = false;
+            var sended = false;
 
-        request = 'getEnemyMatrix';
-        var clientResponseInfo = { playerId: playerId.currentPlayerIndex, fieldMatrix: MyFieldMatrix };
-        var clientResponse = JSON.stringify(clientResponseInfo);
-        var returned;
-
-
-
-        const MatrixGetPromise = new Promise(async function (resolve, reject) {
-            while (returned === undefined || returned.playerId === -4) {
-                returned = await SendAjaxRequest(request, clientResponse);
-                await sleep(sendindingTimeSleep);
+            webSocket.onmessage = function (event) {
+                var tempId = JSON.parse(event.data);
+                playerId = tempId.playerId;
+                done = true;
             };
-            if (returned !== undefined)
-                resolve(returned);
-            else
-                reject(-1);
+
+            while (!done) {
+                if (webSocket.readyState === webSocket.OPEN && !sended) {
+                    webSocket.send(request);
+                    sended = true;
+                }
+                await sleep(2000);
+            };
+            resolve(done);
         });
 
 
-        MatrixGetPromise.then(async function (returnedVal) {
-            if (returnedVal === -1) {
-                console.log("faild to load returned value");
-                return;
-            }
+        waitForConnection.then(function (returnedVal) {
+            var darker = document.getElementById(`darker`);
+            darker.style.visibility = `visible`;
+            var darkerWriter = document.getElementById(`darkerWriter`);
+            darkerWriter.innerText = `waiting for opponent`;
 
-            darker.style.visibility = `hidden`;
-            darkerWriter.innerText = ``;
+            request = 'getEnemy/';
+            var clientResponseInfo = { fieldMatrix: MyFieldMatrix };
+            var clientResponse = JSON.stringify(clientResponseInfo);
+            var returned;
 
-            if (returnedVal.playerId === -2) {
-                EnemyesFieldInit();
-                isBotPlay = true;
+            const MatrixGetPromise = new Promise(async function (resolve, reject) {
+                var done = 0;
+                webSocket.onmessage = function (event) {
+                    var tempData = JSON.parse(event.data);
+                    done = tempData.success;
+                };
 
-                ShowYourTurn();
-            } else {
-                EnemyFieldMatrix = returnedVal.fieldMatrix;
+                webSocket.send(request + clientResponse);
+                while (!done) {
+                    await sleep(2000);
+                };
+                resolve(done);
+            });
 
-                request = 'getMoveNumber';
-                var clientResponseInfo = { currentPlayerIndex: playerId.currentPlayerIndex };
-                var clientResponse = JSON.stringify(clientResponseInfo);
-                moveNumber = await SendAjaxRequest(request, clientResponse);
 
-                if (moveNumber.moveNumber === 2)
-                    GetEnemyClickedCell();
-                else {
-                    ShowYourTurn();
-                    SetActionTimer();
+            MatrixGetPromise.then(async function (returnedVal) {
+                if (returnedVal === -1) {
+                    console.log("faild to load returned value");
+                    return;
                 }
-            }
+
+                darker.style.visibility = `hidden`;
+                darkerWriter.innerText = ``;
+
+                if (returnedVal.playerId === -2) {
+                    EnemyesFieldInit();
+                    isBotPlay = true;
+
+                    ShowYourTurn();
+                } else {
+                    EnemyFieldMatrix = returnedVal.fieldMatrix;
+
+                    request = 'getMoveNumber';
+                    var clientResponseInfo = { currentPlayerIndex: playerId.currentPlayerIndex };
+                    var clientResponse = JSON.stringify(clientResponseInfo);
+                    moveNumber = await SendAjaxRequest(request, clientResponse);
+
+                    if (moveNumber.moveNumber === 2)
+                        GetEnemyClickedCell();
+                    else {
+                        ShowYourTurn();
+                        SetActionTimer();
+                    }
+                }
+            });
         });
     }
 
@@ -96,16 +138,16 @@ function sleep(ms) {
 
 
 
-async function SendAjaxRequest(requestURl, clientResponse = -1) {
-    var responde;
-    if (clientResponse != -1)
-        responde = await fetch(`${requestURl}/${clientResponse}`);
-    else
-        responde = await fetch(requestURl);
+// async function SendAjaxRequest(requestURl, clientResponse = -1) {
+//     var responde;
+//     if (clientResponse != -1)
+//         responde = await fetch(`${requestURl}/${clientResponse}`);
+//     else
+//         responde = await fetch(requestURl);
 
-    var returned = await responde.text();
-    return JSON.parse(returned);
-}
+//     var returned = await responde.text();
+//     return JSON.parse(returned);
+// }
 
 
 
