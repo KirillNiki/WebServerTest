@@ -73,25 +73,26 @@ async function StartGame() {
             request = 'getEnemy/';
             var clientResponseInfo = { fieldMatrix: MyFieldMatrix };
             var clientResponse = JSON.stringify(clientResponseInfo);
-            var returned;
+            var enemyId;
 
             const MatrixGetPromise = new Promise(async function (resolve, reject) {
                 var done = 0;
                 webSocket.onmessage = function (event) {
                     var tempData = JSON.parse(event.data);
-                    done = tempData.success;
+                    enemyId = tempData.playerId;
+                    done = true;
                 };
 
                 webSocket.send(request + clientResponse);
                 while (!done) {
                     await sleep(2000);
                 };
-                resolve(done);
+                resolve(enemyId);
             });
 
 
-            MatrixGetPromise.then(async function (returnedVal) {
-                if (returnedVal === -1) {
+            MatrixGetPromise.then(async function (oppenentId) {
+                if (oppenentId === -1) {
                     console.log("faild to load returned value");
                     return;
                 }
@@ -99,35 +100,34 @@ async function StartGame() {
                 darker.style.visibility = `hidden`;
                 darkerWriter.innerText = ``;
 
-                if (returnedVal.playerId === -2) {
+                if (oppenentId.playerId === -2) {
                     EnemyesFieldInit();
                     isBotPlay = true;
 
                     ShowYourTurn();
                 } else {
-                    EnemyFieldMatrix = returnedVal.fieldMatrix;
+                    request = 'getMoveNumber/';
+                    webSocket.send(request);
 
-                    request = 'getMoveNumber';
-                    var clientResponseInfo = { currentPlayerIndex: playerId.currentPlayerIndex };
-                    var clientResponse = JSON.stringify(clientResponseInfo);
-                    moveNumber = await SendAjaxRequest(request, clientResponse);
-
-                    if (moveNumber.moveNumber === 2)
-                        GetEnemyClickedCell();
-                    else {
-                        ShowYourTurn();
-                        SetActionTimer();
+                    webSocket.onmessage = function (event) {
+                        moveNumber = JSON.parse(event.data);
+                        if (moveNumber.moveNumber === 2)
+                            GetEnemyClickedCell();
+                        else {
+                            ShowYourTurn();
+                            // SetActionTimer();
+                        }
                     }
                 }
             });
         });
     }
 
-
     for (let i = 0; i < AllButtons.length; i++) {
         AllButtons[i].addEventListener(`click`, ButtonPressed);
     }
 }
+
 
 
 function sleep(ms) {

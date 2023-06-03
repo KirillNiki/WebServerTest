@@ -214,7 +214,7 @@ class Client
 
         Server.AllCients[playerId].enemyId = freePlayerId;
         Console.WriteLine(">>>>>>>>>>>12");
-        await SendSomeData(new SuccessFulOperation() { success = 1 });
+        await SendSomeData(new PlayerIndex() { playerId = freePlayerId });
         Console.WriteLine(">>>>>>>>>>>13");
     }
 
