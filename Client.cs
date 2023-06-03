@@ -118,7 +118,7 @@ class Client
                 allData.CopyTo(tempData.Slice(0, allData.Length));
             }
 
-            allData = new Memory<byte>(new byte[1000 * (chunkCounter + 1)]);
+            allData = new Memory<byte>(new byte[(1000 * chunkCounter) + chunkData.Length]);
             if (chunkCounter != 0)
                 tempData.CopyTo(allData.Slice(0, tempData.Length));
 
@@ -153,8 +153,11 @@ class Client
 
     private async Task FindEnemy(string playerInfo)
     {
+        Console.WriteLine(">>>>>>>>>>1");
         MatrixData returnedMatrixData = JsonSerializer.Deserialize<MatrixData>(playerInfo);
+        Console.WriteLine(">>>>>>>>>>2");
         Array.Copy(returnedMatrixData.fieldMatrix, fieldMatrix, returnedMatrixData.fieldMatrix.Length);
+        Console.WriteLine(">>>>>>>>>>3");
 
 
         if (Server.waiterId == -1)
@@ -162,6 +165,7 @@ class Client
             Server.waiterId = playerId;
             newClientConnected += async () => await GetEnemy();
             Server.waitingTimer.Start();
+            
         }
         else
         {
