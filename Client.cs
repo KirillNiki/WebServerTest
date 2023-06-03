@@ -163,20 +163,29 @@ class Client
         if (Server.waiterId == -1)
         {
             Server.waiterId = playerId;
+            Console.WriteLine(Server.waiterId);
+
             newClientConnected += async () => await GetEnemy();
+            Console.WriteLine(">>>>>>>>>>>4");
             Server.waitingTimer.Start();
-            
+            Console.WriteLine(">>>>>>>>>>>5");
+
         }
         else
         {
             Server.waitingTimer.Stop();
+            Console.WriteLine(">>>>>>>>>>>6");
             await GetEnemy(Server.waiterId);
+            Console.WriteLine(">>>>>>>>>>>7");
 
             newClientConnectedReal?.Invoke();
+            Console.WriteLine(">>>>>>>>>>>8");
             for (int i = 0; i < eventDelegates.Count; i++)
                 newClientConnected -= eventDelegates[i];
+            Console.WriteLine(">>>>>>>>>>>9");
 
             Server.waiterId = -1;
+            Console.WriteLine(">>>>>>>>>>>10");
         }
     }
 
@@ -185,6 +194,7 @@ class Client
     private async Task GetEnemy(int freePlayerId = -1)
     {
         Client freePlayer = null;
+        Console.WriteLine(">>>>>>>>>>>11");
         if (freePlayerId == -1)
         {
             for (int i = 0; i < Server.AllCients.Length; i++)
@@ -200,8 +210,12 @@ class Client
         else
             freePlayer = Server.AllCients[freePlayerId];
 
+        Console.WriteLine(freePlayerId);
+
         Server.AllCients[playerId].enemyId = freePlayerId;
+        Console.WriteLine(">>>>>>>>>>>12");
         await SendSomeData(new SuccessFulOperation() { success = 1 });
+        Console.WriteLine(">>>>>>>>>>>13");
     }
 
 

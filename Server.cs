@@ -30,7 +30,7 @@ class Server
     public static System.Timers.Timer waitingTimer = new System.Timers.Timer(maxWaitingtime);
     public static bool isSendBot = false;
     public static int waiterId = -1;
-    
+
 
 
     public enum CellState { missed, got, none };
@@ -91,7 +91,8 @@ class Server
                     HttpListenerWebSocketContext webSocketContext = await request.AcceptWebSocketAsync(null);
                     WebSocket webSocket = webSocketContext.WebSocket;
 
-                    new Client(webSocket);
+                    Thread clienttThread = new Thread(() => new Client(webSocket));
+                    clienttThread.Start();
                 }
                 else
                 {
