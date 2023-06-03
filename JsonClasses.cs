@@ -7,7 +7,6 @@ class PlayerIndex
 
 class MatrixData
 {
-    public int playerId { get; set; }
     public int[][] fieldMatrix { get; set; }
 }
 

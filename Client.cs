@@ -74,6 +74,18 @@ class Client
                         sendTask = new Task(async () => await SendPlayerId());
                         sendTask.Start();
                         break;
+
+                    case ("getEnemy"):
+                        Console.WriteLine(">>>>>>>>>>>>>>>>>>>>");
+                        Console.WriteLine(slashIndex + 1);
+                        Console.WriteLine(resivedDataString.Length - slashIndex);
+                        Console.WriteLine(resivedDataString.Length);
+                        string playerInfo = resivedDataString.Substring(slashIndex + 1, resivedDataString.Length - 1 - slashIndex);
+                        Console.WriteLine(playerInfo);
+
+                        sendTask = new Task(async () => await FindEnemy(playerInfo));
+                        sendTask.Start();
+                        break;
                 }
                 resivedDataString = "";
             }
@@ -139,7 +151,7 @@ class Client
 
 
 
-    private void FindEnemy(string playerInfo)
+    private async Task FindEnemy(string playerInfo)
     {
         MatrixData returnedMatrixData = JsonSerializer.Deserialize<MatrixData>(playerInfo);
         Array.Copy(returnedMatrixData.fieldMatrix, fieldMatrix, returnedMatrixData.fieldMatrix.Length);
@@ -148,13 +160,13 @@ class Client
         if (Server.waiterId == -1)
         {
             Server.waiterId = playerId;
-            newClientConnected += () => GetEnemy();
+            newClientConnected += async () => await GetEnemy();
             Server.waitingTimer.Start();
         }
         else
         {
             Server.waitingTimer.Stop();
-            GetEnemy(Server.waiterId);
+            await GetEnemy(Server.waiterId);
 
             newClientConnectedReal?.Invoke();
             for (int i = 0; i < eventDelegates.Count; i++)
@@ -166,7 +178,7 @@ class Client
 
 
 
-    private async void GetEnemy(int freePlayerId = -1)
+    private async Task GetEnemy(int freePlayerId = -1)
     {
         Client freePlayer = null;
         if (freePlayerId == -1)
@@ -185,7 +197,7 @@ class Client
             freePlayer = Server.AllCients[freePlayerId];
 
         Server.AllCients[playerId].enemyId = freePlayerId;
-        await SendSomeData(new MatrixData() { playerId = freePlayerId, fieldMatrix = freePlayer.fieldMatrix });
+        await SendSomeData(new SuccessFulOperation() { success = 1 });
     }
 
 

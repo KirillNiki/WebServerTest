@@ -43,7 +43,7 @@ async function StartGame() {
         isConnected = true;
 
         var request = "getPlayerId/";
-        var waitForConnection = new Promise(async function (resolve, reject) {
+        const waitForConnection = new Promise(async function (resolve, reject) {
             var done = false;
             var sended = false;
 
