@@ -10,6 +10,7 @@ using System.Net;
 using System.Web;
 using System.Text.Json;
 using System.Timers;
+// using WebSocketSharp;
 
 
 class Client
@@ -51,11 +52,16 @@ class Client
 
     public Client(WebSocket webSocket)
     {
+        ClientWebSocket testWebsocket = new ClientWebSocket();
+
         this.ClientWebSocket = webSocket;
-        while (ClientWebSocket.State == WebSocketState.Open)
+        while (ClientWebSocket.State == WebSocketState.Open || ClientWebSocket.State == WebSocketState.CloseSent)
         {
-            Task resiveTask = new Task(async () => await ReciveData());
+            CancellationTokenSource cancellationTokenSource = new CancellationTokenSource();
+            Task resiveTask = new Task(async () => await ReciveData(cancellationTokenSource), cancellationTokenSource.Token);
             resiveTask.Start();
+            resiveTask.Wait();
+
             Thread.Sleep(2000);
             Console.WriteLine(resivedDataString);
 
@@ -76,58 +82,75 @@ class Client
                         break;
 
                     case ("getEnemy"):
-                        Console.WriteLine(">>>>>>>>>>>>>>>>>>>>");
-                        Console.WriteLine(slashIndex + 1);
-                        Console.WriteLine(resivedDataString.Length - slashIndex);
-                        Console.WriteLine(resivedDataString.Length);
                         string playerInfo = resivedDataString.Substring(slashIndex + 1, resivedDataString.Length - 1 - slashIndex);
                         Console.WriteLine(playerInfo);
 
                         sendTask = new Task(async () => await FindEnemy(playerInfo));
                         sendTask.Start();
                         break;
+
+                    case ("getMoveNumber"):
+                    
+                    break;
                 }
                 resivedDataString = "";
             }
         }
 
-        Console.WriteLine("<<<<<<<<<<<<<<<<<<<<<<");
+        Console.WriteLine("<<<<<<<<<<<<<<<<<<<<<<" + playerId);
     }
 
 
 
 
-    private async Task ReciveData()
+    private async Task ReciveData(CancellationTokenSource cancellationTokenSource)
     {
-        Console.WriteLine(">>>>>>>>>>>>> getting Message");
-
-        int chunkCounter = 0;
-        Memory<byte> allData = null;
-        ValueWebSocketReceiveResult chunk = new ValueWebSocketReceiveResult();
-        var buffer = new Memory<byte>(new byte[1000]);
-
-        do
+        Console.WriteLine(">>>>>>>>>>>>> getting Message" + playerId);
+        try
         {
-            chunk = await ClientWebSocket.ReceiveAsync(buffer, CancellationToken.None);
-            var chunkData = buffer.Slice(0, chunk.Count);
+            int chunkCounter = 0;
+            Memory<byte> allData = null;
+            var buffer = new Memory<byte>(new byte[1000]);
 
-            Memory<byte> tempData = null;
-            if (chunkCounter != 0)
+            ValueWebSocketReceiveResult chunk = new ValueWebSocketReceiveResult();
+
+            do
             {
-                tempData = new Memory<byte>(new byte[allData.Length]);
-                allData.CopyTo(tempData.Slice(0, allData.Length));
-            }
+                chunk = await ClientWebSocket.ReceiveAsync(buffer, cancellationTokenSource.Token);
 
-            allData = new Memory<byte>(new byte[(1000 * chunkCounter) + chunkData.Length]);
-            if (chunkCounter != 0)
-                tempData.CopyTo(allData.Slice(0, tempData.Length));
+                if (chunk.MessageType == WebSocketMessageType.Close)
+                {
+                    Console.WriteLine(">>>>>>>>>>>>> connection closed");
+                    cancellationTokenSource.Cancel();
+                    break;
+                }
+                else
+                {
+                    var chunkData = buffer.Slice(0, chunk.Count);
 
-            chunkData.CopyTo(allData.Slice(1000 * chunkCounter, chunkData.Length));
-            chunkCounter++;
-        } while (!chunk.EndOfMessage);
+                    Memory<byte> tempData = null;
+                    if (chunkCounter != 0)
+                    {
+                        tempData = new Memory<byte>(new byte[allData.Length]);
+                        allData.CopyTo(tempData.Slice(0, allData.Length));
+                    }
 
-        resivedDataString = Encoding.UTF8.GetString(allData.ToArray());
-        Console.WriteLine(">>>>>>>>>>>>> end getting Message");
+                    allData = new Memory<byte>(new byte[(1000 * chunkCounter) + chunkData.Length]);
+                    if (chunkCounter != 0)
+                        tempData.CopyTo(allData.Slice(0, tempData.Length));
+
+                    chunkData.CopyTo(allData.Slice(1000 * chunkCounter, chunkData.Length));
+                    chunkCounter++;
+                }
+            } while (!chunk.EndOfMessage);
+            resivedDataString = Encoding.UTF8.GetString(allData.ToArray());
+        }
+        catch (Exception e)
+        {
+            Console.WriteLine(">>>>>>>error:  " + e.Message);
+        }
+
+        Console.WriteLine(">>>>>>>>>>>>> end getting Message" + playerId);
     }
 
 
@@ -135,8 +158,8 @@ class Client
 
     private async Task SendPlayerId()
     {
-        int playerId = Server.allSutableIdes[0];
-        await SendSomeData(new PlayerIndex { playerId = playerId });
+        playerId = Server.allSutableIdes[0];
+        await SendSomeData(new PlayerIndex { playerId = playerId }, ClientWebSocket);
         enemyId = -1;
 
         Console.WriteLine(playerId);
@@ -144,7 +167,6 @@ class Client
         for (int i = 0; i < fieldMatrix.Length; i++)
             fieldMatrix[i] = new int[fieldWidth];
 
-        Server.waitingTimer.Elapsed += (Object source, ElapsedEventArgs e) => { Server.isSendBot = true; };
         Server.allSutableIdes.RemoveAt(0);
     }
 
@@ -153,11 +175,8 @@ class Client
 
     private async Task FindEnemy(string playerInfo)
     {
-        Console.WriteLine(">>>>>>>>>>1");
         MatrixData returnedMatrixData = JsonSerializer.Deserialize<MatrixData>(playerInfo);
-        Console.WriteLine(">>>>>>>>>>2");
         Array.Copy(returnedMatrixData.fieldMatrix, fieldMatrix, returnedMatrixData.fieldMatrix.Length);
-        Console.WriteLine(">>>>>>>>>>3");
 
 
         if (Server.waiterId == -1)
@@ -166,26 +185,26 @@ class Client
             Console.WriteLine(Server.waiterId);
 
             newClientConnected += async () => await GetEnemy();
-            Console.WriteLine(">>>>>>>>>>>4");
             Server.waitingTimer.Start();
-            Console.WriteLine(">>>>>>>>>>>5");
 
         }
         else
         {
             Server.waitingTimer.Stop();
-            Console.WriteLine(">>>>>>>>>>>6");
             await GetEnemy(Server.waiterId);
-            Console.WriteLine(">>>>>>>>>>>7");
 
             newClientConnectedReal?.Invoke();
-            Console.WriteLine(">>>>>>>>>>>8");
             for (int i = 0; i < eventDelegates.Count; i++)
                 newClientConnected -= eventDelegates[i];
-            Console.WriteLine(">>>>>>>>>>>9");
+
+
+            for (int i = 0; i < Server.AllCients.Length; i++)
+            {
+                if (Server.AllCients[i] != null)
+                    Console.WriteLine($"{i}>>>>>>>>>>>>>{Server.AllCients[i].enemyId}");
+            }
 
             Server.waiterId = -1;
-            Console.WriteLine(">>>>>>>>>>>10");
         }
     }
 
@@ -193,29 +212,22 @@ class Client
 
     private async Task GetEnemy(int freePlayerId = -1)
     {
-        Client freePlayer = null;
-        Console.WriteLine(">>>>>>>>>>>11");
+        Client freePlayer;
         if (freePlayerId == -1)
         {
             for (int i = 0; i < Server.AllCients.Length; i++)
             {
                 if (Server.AllCients[i] != null && Server.AllCients[i].enemyId == playerId)
                 {
-                    freePlayer = Server.AllCients[i];
                     freePlayerId = i;
                     break;
                 }
             }
         }
-        else
-            freePlayer = Server.AllCients[freePlayerId];
-
-        Console.WriteLine(freePlayerId);
+        freePlayer = Server.AllCients[freePlayerId];
 
         Server.AllCients[playerId].enemyId = freePlayerId;
-        Console.WriteLine(">>>>>>>>>>>12");
-        await SendSomeData(new PlayerIndex() { playerId = freePlayerId });
-        Console.WriteLine(">>>>>>>>>>>13");
+        await SendSomeData(new PlayerIndex() { playerId = freePlayerId }, ClientWebSocket);
     }
 
 
@@ -250,58 +262,36 @@ class Client
 
 
 
-    // private void RemovePlayer(int playerId)
-    // {
-    //     for (int i = 0; i < AllPlayersInfo.Length; i++)
-    //     {
-    //         Console.WriteLine(AllPlayersInfo[i].enemyIndex);
-    //     }
+    private static void RemovePlayer(int playerIndex)
+    {
+        Console.WriteLine(">>>>>>>>>>>> removing player");
+        for (int i = 0; i < Server.AllCients.Length; i++)
+        {
+            if (Server.AllCients[i] != null)
+                Console.WriteLine(Server.AllCients[i].enemyId);
+        }
 
-    //     var temp = AllPlayersInfo[playerId];
-    //     // if (temp.enemyIndex != -1 && isKicked)
-    //     // {
-    //     //     Console.WriteLine("jjjjjjjjjjjjjjjj1");
-    //     //     var enenmyId = temp.enemyIndex;
-    //     //     SendSomeData(new Server.CellData() { playerId = enemyKickedId }, client);
-    //     //     Console.WriteLine("jjjjjjjjjjjjjjjj2");
-    //     //     RemovePlayer(enenmyId, false);
-    //     //     Console.WriteLine("jjjjjjjjjjjjjjjj3");
-    //     // }
-    //     Console.WriteLine(">>>>>>>>>>>>>>>>>>>>>>2");
+        Server.AllCients[playerIndex] = null;
+        Server.allSutableIdes.Add(playerIndex);
 
-    //     if (temp.aliveTimer != null) temp.aliveTimer.Close();
-    //     Console.WriteLine(">>>>>>>>>>>>>>>>>>>>>>21");
-    //     if (temp.lastActionTimer != null) temp.lastActionTimer.Close();
-    //     Console.WriteLine(">>>>>>>>>>>>>>>>>>>>>>22");
-    //     if (temp.waitingTimer != null) temp.waitingTimer.Close();
-    //     Console.WriteLine(">>>>>>>>>>>>>>>>>>>>>>23");
-
-    //     temp = Server.PlayerContent.Default;
-    //     AllPlayersInfo[playerId] = temp;
-    //     allSutableIdes.Add(playerId);
-    //     Console.WriteLine(">>>>>>>>>>>>>>>>>>>>>>3");
-
-    //     for (int i = 0; i < AllPlayersInfo.Length; i++)
-    //     {
-    //         Console.WriteLine(AllPlayersInfo[i].enemyIndex);
-    //     }
-    // }
+        for (int i = 0; i < Server.AllCients.Length; i++)
+        {
+            if (Server.AllCients[i] != null)
+                Console.WriteLine(Server.AllCients[i].enemyId);
+        }
+    }
 
 
 
-    // public void SendBot()
-    // {
-    //     Console.WriteLine("SendBot");
+    public async static Task SendBot()
+    {
+        Console.WriteLine(">>>>>>>>>> sending bot");
+        await SendSomeData(new PlayerIndex() { playerId = botId }, Server.AllCients[Server.waiterId].ClientWebSocket);
+        RemovePlayer(Server.waiterId);
 
-    //     Console.WriteLine("<<<<<<<<<<<<<<<<<<<<1");
-    //     SendSomeData(new Server.MatrixData() { playerId = botId }, client);
-    //     Console.WriteLine("<<<<<<<<<<<<<<<<<<<<2");
-
-    //     Console.WriteLine("<<<<<<<<<<<<<<<<<<<<3");
-    //     RemovePlayer(waiterIds.Item1);
-    //     Console.WriteLine("<<<<<<<<<<<<<<<<<<<<4");
-    //     waiterIds.Item1 = -1;
-    // }
+        Server.waitingTimer.Stop();
+        Server.waiterId = -1;
+    }
 
 
 
@@ -396,11 +386,11 @@ class Client
 
 
 
-    public async Task SendSomeData(Object classType)
+    public async static Task SendSomeData(Object classType, WebSocket webSocket)
     {
         string jsonFile = JsonSerializer.Serialize(classType);
         byte[] bytes = Encoding.UTF8.GetBytes(jsonFile);
 
-        await ClientWebSocket.SendAsync(bytes, WebSocketMessageType.Text, true, CancellationToken.None);
+        await webSocket.SendAsync(bytes, WebSocketMessageType.Text, true, CancellationToken.None);
     }
 }

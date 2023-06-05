@@ -52,6 +52,7 @@ class Server
 
         this.httpListener = new HttpListener();
         this.httpListener.Prefixes.Add($"http://{ip}/");
+        waitingTimer.Elapsed += async (Object source, ElapsedEventArgs e) => await Client.SendBot();
 
         AllCients = new Client[maxClients];
         allSutableIdes = new List<int>(maxClients);
@@ -91,7 +92,7 @@ class Server
                     HttpListenerWebSocketContext webSocketContext = await request.AcceptWebSocketAsync(null);
                     WebSocket webSocket = webSocketContext.WebSocket;
 
-                    Thread clienttThread = new Thread(() => new Client(webSocket));
+                    Task clienttThread = new Task(() => new Client(webSocket));
                     clienttThread.Start();
                 }
                 else

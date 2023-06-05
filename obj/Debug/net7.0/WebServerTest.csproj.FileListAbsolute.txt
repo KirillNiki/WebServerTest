@@ -13,3 +13,5 @@
 /Users/emac/Documents/VSCode/WebServerTest/obj/Debug/net7.0/WebServerTest.pdb
 /Users/emac/Documents/VSCode/WebServerTest/obj/Debug/net7.0/WebServerTest.genruntimeconfig.cache
 /Users/emac/Documents/VSCode/WebServerTest/obj/Debug/net7.0/ref/WebServerTest.dll
+/Users/emac/Documents/VSCode/WebServerTest/bin/Debug/net7.0/websocket-sharp.dll
+/Users/emac/Documents/VSCode/WebServerTest/obj/Debug/net7.0/WebServerTest.csproj.CopyComplete

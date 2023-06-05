@@ -1,8 +1,21 @@
 {
   "version": 2,
-  "dgSpecHash": "MRfBRho0CQQBhpYGkb74lTouOCkbCqFXeElrKWLrdDuvA+QaASsRn2ssN2or/KJxQA5tQ4AXkfqM1JJevFl6Dg==",
+  "dgSpecHash": "nmVgTrKnAR3VfahMf9s4eyTNfgQw0cKG/IsCjpWNctnDOz3+08n9B8fvJ5LdCXHMVFaI+5wo6FNyeiqhQoFK5g==",
   "success": true,
   "projectFilePath": "/Users/emac/Documents/VSCode/WebServerTest/WebServerTest.csproj",
-  "expectedPackageFiles": [],
-  "logs": []
+  "expectedPackageFiles": [
+    "/Users/emac/.nuget/packages/websocketsharp/1.0.3-rc11/websocketsharp.1.0.3-rc11.nupkg.sha512"
+  ],
+  "logs": [
+    {
+      "code": "NU1701",
+      "level": "Warning",
+      "warningLevel": 1,
+      "message": "Пакет \"WebSocketSharp 1.0.3-rc11\" был восстановлен с помощью \".NETFramework,Version=v4.6.1, .NETFramework,Version=v4.6.2, .NETFramework,Version=v4.7, .NETFramework,Version=v4.7.1, .NETFramework,Version=v4.7.2, .NETFramework,Version=v4.8, .NETFramework,Version=v4.8.1\", а не целевой платформы проекта \"net7.0\". Этот пакет может быть не полностью совместим с вашим проектом.",
+      "libraryId": "WebSocketSharp",
+      "targetGraphs": [
+        "net7.0"
+      ]
+    }
+  ]
 }

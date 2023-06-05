@@ -16,7 +16,7 @@ var moveNumber;
 
 
 let webSocket;
-let domain = "192.168.0.53:9000";
+let domain = "192.168.2.81:9000";
 let isConnected = false;
 
 
@@ -100,9 +100,10 @@ async function StartGame() {
                 darker.style.visibility = `hidden`;
                 darkerWriter.innerText = ``;
 
-                if (oppenentId.playerId === -2) {
+                if (oppenentId === -2) {
                     EnemyesFieldInit();
                     isBotPlay = true;
+                    webSocket.close();
 
                     ShowYourTurn();
                 } else {
@@ -110,12 +111,12 @@ async function StartGame() {
                     webSocket.send(request);
 
                     webSocket.onmessage = function (event) {
-                        moveNumber = JSON.parse(event.data);
-                        if (moveNumber.moveNumber === 2)
+                        var tempMoveNumber = JSON.parse(event.data);
+                        moveNumber = tempMoveNumber.moveNumber;
+                        if (moveNumber === 2)
                             GetEnemyClickedCell();
                         else {
                             ShowYourTurn();
-                            // SetActionTimer();
                         }
                     }
                 }
