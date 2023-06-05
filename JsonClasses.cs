@@ -12,9 +12,14 @@ class MatrixData
 
 class CellData
 {
-    public int playerId { get; set; }
     public int y { get; set; }
     public int x { get; set; }
+}
+
+class IsGot
+{
+    public bool isGot { get; set; }
+    public bool isEnd { get; set; }
 }
 
 class SuccessFulOperation
@@ -24,5 +29,6 @@ class SuccessFulOperation
 
 class MoveNumber
 {
+    public int playerId { get; set; }
     public int moveNumber { get; set; }
 }

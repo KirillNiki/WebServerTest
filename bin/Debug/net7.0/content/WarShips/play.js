@@ -92,10 +92,10 @@ async function StartGame() {
 
 
             MatrixGetPromise.then(async function (oppenentId) {
-                if (oppenentId === -1) {
-                    console.log("faild to load returned value");
-                    return;
-                }
+                // if (oppenentId === -1) {
+                //     console.log("faild to load returned value");
+                //     return;
+                // }
 
                 darker.style.visibility = `hidden`;
                 darkerWriter.innerText = ``;
@@ -157,7 +157,7 @@ const BySide = { byside: 0, notbyside: 1 };
 const TopRight = { top: 0, right: 1 };
 
 
-let enemyShip = [];
+let ship = [];
 
 async function ButtonPressed(event) {
     let button = event.target;
@@ -166,139 +166,179 @@ async function ButtonPressed(event) {
     let x = parent.x;
     button.style.visibility = `hidden`;
 
-    clearTimeout(actionTimer);
-
-
     var turn = document.getElementById(`turn`);
     turn.style.visibility = `hidden`;
 
-    if (!isBotPlay) {
-        var clickedCell = { playerId: playerId.currentPlayerIndex, y: x, x: y };
-        var requestURl = 'clickedCellByMe';
-        var clientResponse = JSON.stringify(clickedCell);
 
-        var returned = await SendAjaxRequest(requestURl, clientResponse);
-    }
+    var isGot = false;
+    var isEnd = false;
 
-    switch (EnemyFieldMatrix[x][y]) {
-        case States.ship:
-            parent.getElementsByClassName(`got`)[0].style.visibility = `visible`;
-            EnemyFieldMatrix[x][y] = States.destroyed;
-            let img = document.getElementById(`enemy` + (x).toString() + (y).toString());
-            img.style.zIndex = 1;
+    const SendCell = new Promise(async function (resolve, reject) {
+        if (!isBotPlay) {
+            var done = false;
+            webSocket.onmessage = function (event) {
+                var tempResponse = JSON.parse(event.data);
+                isGot = tempResponse.isGot;
+                isEnd = tempResponse.isEnd;
+                done = true;
+            };
 
-            enemyShip.push({ y: x, x: y });
-            CheckCell(y, x, -1, -1);
+            var clickedCell = { y: x, x: y };
+            var requestURl = 'clickedCell/';
+            var clientResponse = JSON.stringify(clickedCell);
 
-            if (enemyShip.length !== 0) {
-                VisualizeDestroyedShip();
-                enemyShipsCount--;
+            webSocket.send(requestURl + clientResponse);
+            while (!done) { await sleep(2000); }
+        }
+        resolve(1);
+    });
 
-                if (enemyShipsCount === 0) {
-                    await GameOver();
-                    return 1;
+
+    SendCell.then(async function () {
+        if (isBotPlay) {
+            if (EnemyFieldMatrix[x][y] === States.ship)
+                isGot = true;
+        }
+
+        switch (isGot) {
+            case true:
+                parent.getElementsByClassName(`got`)[0].style.visibility = `visible`;
+                EnemyFieldMatrix[x][y] = States.destroyed;
+                let img = document.getElementById(`enemy` + (x).toString() + (y).toString());
+                img.style.zIndex = 1;
+
+                if (isBotPlay) {
+                    ship.push({ y: x, x: y });
+                    CheckCell(y, x, -1, -1);
                 }
-            }
-            break;
+                else {
+                    if (isEnd) {
+                        ship.push({ y: x, x: y });
+                        CheckCell(y, x, -1, -1);
+                    }
+                }
 
-        default:
-            parent.getElementsByClassName(`missed`)[0].style.visibility = `visible`;
-            EnemyFieldMatrix[x][y] = States.missed;
 
-            if (isBotPlay)
-                ComputerMove();
-            else
-                GetEnemyClickedCell();
+                if (ship.length !== 0) {
+                    VisualizeDestroyedShip();
+                    enemyShipsCount--;
 
-            break;
-    }
+                    // if (enemyShipsCount === 0) {
+                    //     await GameOver();
+                    //     return 1;
+                    // }
+                }
+                break;
+
+            default:
+                parent.getElementsByClassName(`missed`)[0].style.visibility = `visible`;
+                EnemyFieldMatrix[x][y] = States.missed;
+
+                if (isBotPlay)
+                    ComputerMove();
+                else
+                    GetEnemyClickedCell();
+                break;
+        }
+    });
 }
 
 
-let actionTimer;
-let aliveTimer;
 
 async function GetEnemyClickedCell() {
-    var requestURl = 'clickedCellByEnemy';
-    var clientResponseInfo = { currentPlayerIndex: playerId.currentPlayerIndex };
-    var clientResponse = JSON.stringify(clientResponseInfo);
+    var y, x;
 
     var darker = document.getElementById(`darker`);
     darker.style.visibility = `visible`;
     ShowEnemyTurn();
 
-
-    var returned;
-    const MatrixGetPromise = new Promise(async function (resolve, reject) {
-        while (returned === undefined || returned.playerId === -4) {
-            returned = await SendAjaxRequest(requestURl, clientResponse);
-            await sleep(sendindingTimeSleep);
+    const EnemyClickedCell = new Promise(async function (resolve, reject) {
+        var done = false;
+        webSocket.onmessage = function (event) {
+            var tempCellInfo = JSON.parse(event.data);
+            y = tempCellInfo.y;
+            x = tempCellInfo.x;
+            done = true;
         };
-        if (returned !== undefined)
-            resolve(returned);
-        else
-            reject(-1);
+
+        while (!done) { await sleep(2000); }
+        resolve(1);
     });
 
 
-    MatrixGetPromise.then(async function (returnedVal) {
-        if (returnedVal === -1) {
-            console.log("faild to load returned value");
-            return;
-        }
-        if (returned.playerId === -3) {
-            var darkerWriter = document.getElementById(`darkerWriter`);
-            darkerWriter.innerText = `oppenent has left the game`;
+    EnemyClickedCell.then(function () {
+        var isGot = false;
+        var isEnd = false;
 
-            var turn = document.getElementById(`turn`);
-            turn.style.visibility = `hidden`;
+        // if (returned.playerId === -3) {
+        //     var darkerWriter = document.getElementById(`darkerWriter`);
+        //     darkerWriter.innerText = `oppenent has left the game`;
 
-            setTimeout(StartEndGame(), 2000);
-            return;
-        }
+        //     var turn = document.getElementById(`turn`);
+        //     turn.style.visibility = `hidden`;
 
-        var cell = document.getElementById(returned.y.toString() + returned.x.toString());
+        //     setTimeout(StartEndGame(), 2000);
+        //     return;
+        // }
+        var cell = document.getElementById(y.toString() + x.toString());
 
-        if (MyFieldMatrix[returned.y][returned.x] === States.ship) {
+        if (MyFieldMatrix[y][x] === States.ship) {
             cell.getElementsByClassName(`got`)[0].style.visibility = `visible`;
-            MyFieldMatrix[returned.y][returned.x] = States.destroyed;
+            MyFieldMatrix[y][x] = States.destroyed;
             myShipCellsCount--;
 
-            if (myShipCellsCount === 0) {
-                await GameOver();
-                return;
-            }
+            ship.push({ y: x, x: y });
+            CheckCell(y, x, -1, -1);
+
+            if (ship.length != 0)
+                isEnd = true;
+            else
+                isEnd = false;
+            isGot = true;
+
+
+            // if (myShipCellsCount === 0) {
+            //     await GameOver();
+            //     return;
+            // }
 
             GetEnemyClickedCell();
         }
         else {
             cell.getElementsByClassName(`missed`)[0].style.visibility = `visible`;
-            MyFieldMatrix[returned.y][returned.x] = States.missed;
+            MyFieldMatrix[y][x] = States.missed;
             darker.style.visibility = `hidden`;
 
-            clearTimeout(aliveTimer);
+            isGot = false;
+            isEnd = false;
 
             ShowYourTurn();
-            SetActionTimer();
         }
+
+
+        var requestURl = 'enemyCellResponce/';
+        var clientResponseInfo = { isGot: isGot, isEnd: isEnd };
+        var clientResponse = JSON.stringify(clientResponseInfo);
+
+        webSocket.send(requestURl + clientResponse);
     });
 }
 
 
-function SetActionTimer() {
-    actionTimer = setTimeout(() => {
-        const darker = document.getElementById(`darker`);
-        darker.style.visibility = `visible`;
+// function SetActionTimer() {
+//     actionTimer = setTimeout(() => {
+//         const darker = document.getElementById(`darker`);
+//         darker.style.visibility = `visible`;
 
-        const turn = document.getElementById(`turn`);
-        turn.style.visibility = `hidden`;
+//         const turn = document.getElementById(`turn`);
+//         turn.style.visibility = `hidden`;
 
-        setTimeout(() => {
-            alert(`you had been kicked`);
-            StartEndGame();
-        }, 100);
-    }, 40000);
-}
+//         setTimeout(() => {
+//             alert(`you had been kicked`);
+//             StartEndGame();
+//         }, 100);
+//     }, 40000);
+// }
 
 
 
@@ -310,12 +350,12 @@ function CheckCell(x, y, checkedY, checkedX) {
             if (oy === y && ox === x) { }
             else if (oy >= 0 && oy < tableLength && ox >= 0 && ox < tableLength && (oy !== checkedY || ox !== checkedX)) {
                 if (EnemyFieldMatrix[oy][ox] === States.destroyed) {
-                    enemyShip.push({ y: oy, x: ox });
+                    ship.push({ y: oy, x: ox });
 
                     CheckCell(ox, oy, y, x);
                 }
                 else if (EnemyFieldMatrix[oy][ox] === States.ship) {
-                    enemyShip.splice(0, enemyShip.length);
+                    ship.splice(0, ship.length);
                     toBreak = true;
                     break;
                 }
@@ -334,18 +374,18 @@ function VisualizeDestroyedShip() {
     let minIndex = 0;
     let rotation = 0;
 
-    if (enemyShip.length > 1) {
-        for (let i = 0; i < enemyShip.length; i++) {
-            if (enemyShip[i].x < enemyShip[minIndex].x || enemyShip[i].y < enemyShip[minIndex].y) {
+    if (ship.length > 1) {
+        for (let i = 0; i < ship.length; i++) {
+            if (ship[i].x < ship[minIndex].x || ship[i].y < ship[minIndex].y) {
                 minIndex = i;
             }
         }
 
         let indexToCompaier = minIndex === 0 ? 1 : 0;
-        if (enemyShip[indexToCompaier].x - enemyShip[minIndex].x !== 0) {
+        if (ship[indexToCompaier].x - ship[minIndex].x !== 0) {
             rotation = 0;
         }
-        else if (enemyShip[indexToCompaier].y - enemyShip[minIndex].y !== 0) {
+        else if (ship[indexToCompaier].y - ship[minIndex].y !== 0) {
             rotation = 90;
         }
     }
@@ -353,35 +393,35 @@ function VisualizeDestroyedShip() {
     let img = document.createElement(`img`);
     img.class = `WarShip`;
 
-    if (enemyShip.length === 4) {
+    if (ship.length === 4) {
         img.src = `sprites/fourBlockShip.png`;
         img.id = `enemyFourBlockShip` + index;
         EnemyShips.push(img);
         img.length = 4;
     }
-    else if (enemyShip.length === 3) {
+    else if (ship.length === 3) {
         img.src = `sprites/threeBlockShip.png`;
         img.id = `enemyThreeBlockShip` + index;
         EnemyShips.push(img);
         img.length = 3;
     }
-    else if (enemyShip.length === 2) {
+    else if (ship.length === 2) {
         img.src = `sprites/twoBlockShip.png`;
         img.id = `enemyTwoBlockShip` + index;
         EnemyShips.push(img);
         img.length = 2;
     }
-    else if (enemyShip.length === 1) {
+    else if (ship.length === 1) {
         img.src = `sprites/oneBlockShip.png`;
         img.id = `enemyOneBlockShip` + index;
         EnemyShips.push(img);
         img.length = 1;
     }
-    let cell = document.getElementById(`enemy` + (enemyShip[minIndex].y).toString() + (enemyShip[minIndex].x).toString());
+    let cell = document.getElementById(`enemy` + (ship[minIndex].y).toString() + (ship[minIndex].x).toString());
 
     img.style.position = `absolute`;
-    img.cellY = enemyShip[minIndex].y;
-    img.cellX = enemyShip[minIndex].x;
+    img.cellY = ship[minIndex].y;
+    img.cellX = ship[minIndex].x;
 
     let Fields = document.getElementsByTagName(`table`);
     let width = Fields[0].clientWidth / 11;
@@ -398,13 +438,13 @@ function VisualizeDestroyedShip() {
     img.style.transform = st;
     cell.appendChild(img);
 
-    enemyShip.splice(0, enemyShip.length);
+    ship.splice(0, ship.length);
     index++;
 }
 
 
 
-async function GameOver() {
+function GameOver() {
     setTimeout(async () => {
         if (!isBotPlay && enemyShipsCount === 0) {
             var endGame = { currentPlayerIndex: playerId.currentPlayerIndex };

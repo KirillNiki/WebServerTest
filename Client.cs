@@ -15,6 +15,7 @@ using System.Timers;
 
 class Client
 {
+    private const int youKickedId = -5;
     private const int errorId = -4;
     private const int enemyKickedId = -3;
     private const int botId = -2;
@@ -23,7 +24,7 @@ class Client
 
     private delegate void NewClientConnected();
     private static List<NewClientConnected> eventDelegates = new List<NewClientConnected>();
-    private static event NewClientConnected newClientConnectedReal;
+    private static event NewClientConnected? newClientConnectedReal;
     private static event NewClientConnected newClientConnected
     {
         add
@@ -44,16 +45,18 @@ class Client
     private string resivedDataString = "";
     private int[][] fieldMatrix = new int[fieldWidth][];
     public Server.ClickedCellInfo ClickedCellInfo = new Server.ClickedCellInfo { y = -1, x = -1, cellState = Server.CellState.none };
+    public System.Timers.Timer lastActionTimer = new Timer(maxInactionTime);
     private int playerId;
     public int enemyId = -1;
 
 
 
+    private bool kickedFlag = false;
+
+
 
     public Client(WebSocket webSocket)
     {
-        ClientWebSocket testWebsocket = new ClientWebSocket();
-
         this.ClientWebSocket = webSocket;
         while (ClientWebSocket.State == WebSocketState.Open || ClientWebSocket.State == WebSocketState.CloseSent)
         {
@@ -69,9 +72,14 @@ class Client
             {
                 int slashIndex = resivedDataString.IndexOf('/');
                 string request = "";
+                string playerInfo = "";
 
                 if (slashIndex != -1)
+                {
                     request = resivedDataString.Substring(0, slashIndex);
+                    playerInfo = resivedDataString.Substring(slashIndex + 1, resivedDataString.Length - 1 - slashIndex);
+                    Console.WriteLine(playerInfo);
+                }
                 Task sendTask;
 
                 switch (request)
@@ -82,21 +90,36 @@ class Client
                         break;
 
                     case ("getEnemy"):
-                        string playerInfo = resivedDataString.Substring(slashIndex + 1, resivedDataString.Length - 1 - slashIndex);
-                        Console.WriteLine(playerInfo);
-
                         sendTask = new Task(async () => await FindEnemy(playerInfo));
                         sendTask.Start();
                         break;
 
                     case ("getMoveNumber"):
-                    
-                    break;
+                        sendTask = new Task(async () => await SendMoveNumber());
+                        sendTask.Start();
+                        break;
+
+                    case ("clickedCell"):
+                        sendTask = new Task(async () => await GetClickedCell(playerInfo));
+                        sendTask.Start();
+                        break;
+
+                    case ("enemyCellResponce"):
+                        sendTask = new Task(async () => await EnemyCellResponce(playerInfo));
+                        sendTask.Start();
+                        break;
                 }
                 resivedDataString = "";
             }
         }
 
+
+        if (kickedFlag)
+        {
+            Task kickTask = new Task(async () => await KickPlayer());
+            kickTask.Start();
+            kickTask.Wait();
+        }
         Console.WriteLine("<<<<<<<<<<<<<<<<<<<<<<" + playerId);
     }
 
@@ -111,7 +134,6 @@ class Client
             int chunkCounter = 0;
             Memory<byte> allData = null;
             var buffer = new Memory<byte>(new byte[1000]);
-
             ValueWebSocketReceiveResult chunk = new ValueWebSocketReceiveResult();
 
             do
@@ -127,7 +149,6 @@ class Client
                 else
                 {
                     var chunkData = buffer.Slice(0, chunk.Count);
-
                     Memory<byte> tempData = null;
                     if (chunkCounter != 0)
                     {
@@ -175,7 +196,7 @@ class Client
 
     private async Task FindEnemy(string playerInfo)
     {
-        MatrixData returnedMatrixData = JsonSerializer.Deserialize<MatrixData>(playerInfo);
+        MatrixData? returnedMatrixData = JsonSerializer.Deserialize<MatrixData>(playerInfo);
         Array.Copy(returnedMatrixData.fieldMatrix, fieldMatrix, returnedMatrixData.fieldMatrix.Length);
 
 
@@ -210,6 +231,7 @@ class Client
 
 
 
+
     private async Task GetEnemy(int freePlayerId = -1)
     {
         Client freePlayer;
@@ -233,32 +255,22 @@ class Client
 
 
 
-    // private void GetMoveNumber()
-    // {
-    //     var playerInfo = System.Web.HttpUtility.UrlDecode(Headers.File.Substring(("/content/WarShips/getMoveNumber").Length + 1));
-    //     Server.CurrentPlayerIndex? playerIndex = JsonSerializer.Deserialize<Server.CurrentPlayerIndex>(playerInfo);
+    private async Task SendMoveNumber()
+    {
+        Console.WriteLine(">>>>>>>>>>> sending moveNumber" + playerId);
+        lastActionTimer.Elapsed += async (Object source, ElapsedEventArgs e) => await KickPlayer();
+        if (playerId < enemyId)
+        {
+            await SendSomeData(new MoveNumber() { moveNumber = 1 }, ClientWebSocket);
+            lastActionTimer.Start();
+        }
+        else
+        {
+            await SendSomeData(new MoveNumber() { moveNumber = 2 }, ClientWebSocket);
+            lastActionTimer.Stop();
+        }
+    }
 
-    //     Server.PlayerContent temp = Server.AllPlayersInfo[playerIndex.currentPlayerIndex];
-    //     temp.lastActionTimer = new Timer(maxInactionTime);
-    //     temp.lastActionTimer.Elapsed += (Object source, ElapsedEventArgs e) =>
-    //     {
-    //         Console.WriteLine("lastActionTimer Elapsed");
-    //         RemovePlayer(playerIndex.currentPlayerIndex);
-    //     };
-    //     Server.AllPlayersInfo[playerIndex.currentPlayerIndex] = temp;
-
-
-    //     if (playerIndex.currentPlayerIndex < AllPlayersInfo[playerIndex.currentPlayerIndex].enemyIndex)
-    //     {
-    //         SendSomeData(new Server.MoveNumber() { moveNumber = 1 }, client);
-    //         AllPlayersInfo[playerIndex.currentPlayerIndex].lastActionTimer.Start();
-    //     }
-    //     else
-    //     {
-    //         SendSomeData(new Server.MoveNumber() { moveNumber = 2 }, client);
-    //         AllPlayersInfo[playerIndex.currentPlayerIndex].lastActionTimer.Stop();
-    //     }
-    // }
 
 
 
@@ -283,6 +295,32 @@ class Client
 
 
 
+
+    private async Task KickPlayer()
+    {
+        Console.WriteLine(">>>>>>>>.kicking player" + playerId);
+        if (Server.waiterId == playerId)
+        {
+            Server.waiterId = -1;
+        }
+
+        if (ClientWebSocket.State == WebSocketState.Open)
+        {
+            await SendSomeData(new PlayerIndex() { playerId = youKickedId }, ClientWebSocket);
+        }
+        RemovePlayer(playerId);
+
+        var enemy = Server.AllCients[enemyId];
+        if (enemy.ClientWebSocket.State == WebSocketState.Open)
+        {
+            await SendSomeData(new PlayerIndex { playerId = enemyKickedId }, enemy.ClientWebSocket);
+        }
+        kickedFlag = true;
+    }
+
+
+
+
     public async static Task SendBot()
     {
         Console.WriteLine(">>>>>>>>>> sending bot");
@@ -295,51 +333,43 @@ class Client
 
 
 
-    // private void GetClickedCell()
-    // {
-    //     var cellInfo = System.Web.HttpUtility.UrlDecode(Headers.File.Substring(("/content/WarShips/clickedCellByMe").Length + 1));
-    //     Server.CellData? returnedCellData = JsonSerializer.Deserialize<Server.CellData>(cellInfo);
 
-    //     var temp = AllPlayersInfo[returnedCellData.playerId];
-    //     temp.y = returnedCellData.y;
-    //     temp.x = returnedCellData.x;
-    //     temp.lastActionTimer.Stop();
-    //     temp.lastActionTimer.Start();
-    //     temp.aliveTimer.Stop();
+    private async Task GetClickedCell(string cellInfo)
+    {
+        Console.WriteLine(">>>>>>>>>>>> got celldata" + playerId);
+        lastActionTimer.Stop();
 
-    //     AllPlayersInfo[returnedCellData.playerId] = temp;
-    //     SendSomeData(new Server.SuccessFulOperation() { success = 1 }, client);
-    // }
+        Console.WriteLine(cellInfo);
+        CellData? returnedCellData = JsonSerializer.Deserialize<CellData>(cellInfo);
+
+        ClickedCellInfo.y = returnedCellData.y;
+        ClickedCellInfo.x = returnedCellData.x;
+
+        Console.WriteLine($"<<<<<<<<<<<<<{playerId}:    {ClickedCellInfo.y}{ClickedCellInfo.x}");
+        if (Server.AllCients[enemyId].ClientWebSocket.State == WebSocketState.Open)
+            await SendSomeData(returnedCellData, Server.AllCients[enemyId].ClientWebSocket);
+    }
 
 
 
-    // private void GetEnemyClickedCell()
-    // {
-    //     var playerId = System.Web.HttpUtility.UrlDecode(Headers.File.Substring(("/content/WarShips/clickedCellByEnemy").Length + 1));
-    //     Server.CurrentPlayerIndex? returnedId = JsonSerializer.Deserialize<Server.CurrentPlayerIndex>(playerId);
 
-    //     var temp = AllPlayersInfo[returnedId.currentPlayerIndex];
-    //     int enemyId = temp.enemyIndex;
-    //     var enemy = AllPlayersInfo[enemyId];
+    private async Task EnemyCellResponce(string cellInfoJson)
+    {
+        IsGot? cellInfo = JsonSerializer.Deserialize<IsGot>(cellInfoJson);
 
-    //     temp.lastActionTimer.Stop();
-    //     temp.aliveTimer.Stop();
+        if (Server.AllCients[enemyId].ClientWebSocket.State == WebSocketState.Open)
+            await SendSomeData(cellInfo, Server.AllCients[enemyId].ClientWebSocket);
 
-    //     if (enemy.y != -1)
-    //     {
-    //         SendSomeData(new Server.CellData() { playerId = enemyId, y = enemy.y, x = enemy.x }, client);
-    //         enemy.y = -1;
-    //         enemy.x = -1;
-    //     }
-    //     else
-    //     {
-    //         SendSomeData(new Server.CellData() { playerId = errorId, y = -1, x = -1 }, client);
-    //     }
+        if (cellInfo.isGot)
+        {
+            Server.AllCients[enemyId].lastActionTimer.Start();
+        }
+        else
+        {
+            lastActionTimer.Start();
+        }
+    }
 
-    //     temp.aliveTimer.Start();
-    //     AllPlayersInfo[returnedId.currentPlayerIndex] = temp;
-    //     AllPlayersInfo[enemyId] = enemy;
-    // }
 
 
 
