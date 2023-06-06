@@ -16,18 +16,8 @@ var moveNumber;
 
 
 let webSocket;
-let domain = "192.168.2.81:9000";
-let isConnected = false;
-
-
-
-const terminationEvent = 'onpagehide' in self ? 'pagehide' : 'unload';
-window.addEventListener(terminationEvent, (event) => {
-    if (isConnected && webSocket.readyState === WebSocket.OPEN && event.persisted === false) {
-        socket.onclose = function () { };
-        socket.close();
-    }
-});
+let domain = "192.168.0.53:9000";
+let clientWebSocket;
 
 
 
@@ -40,63 +30,27 @@ async function StartGame() {
     }
     else {
         webSocket = new WebSocket(`ws://${domain}/`);
-        isConnected = true;
 
-        var request = "getPlayerId/";
         const waitForConnection = new Promise(async function (resolve, reject) {
-            var done = false;
-            var sended = false;
-
-            webSocket.onmessage = function (event) {
-                var tempId = JSON.parse(event.data);
-                playerId = tempId.playerId;
-                done = true;
-            };
-
-            while (!done) {
-                if (webSocket.readyState === webSocket.OPEN && !sended) {
-                    webSocket.send(request);
-                    sended = true;
-                }
-                await sleep(2000);
-            };
+            var done = await GetPlayerId();
             resolve(done);
         });
 
 
         waitForConnection.then(function (returnedVal) {
             var darker = document.getElementById(`darker`);
-            darker.style.visibility = `visible`;
             var darkerWriter = document.getElementById(`darkerWriter`);
+            darker.style.visibility = `visible`;
             darkerWriter.innerText = `waiting for opponent`;
 
-            request = 'getEnemy/';
-            var clientResponseInfo = { fieldMatrix: MyFieldMatrix };
-            var clientResponse = JSON.stringify(clientResponseInfo);
-            var enemyId;
 
             const MatrixGetPromise = new Promise(async function (resolve, reject) {
-                var done = 0;
-                webSocket.onmessage = function (event) {
-                    var tempData = JSON.parse(event.data);
-                    enemyId = tempData.playerId;
-                    done = true;
-                };
-
-                webSocket.send(request + clientResponse);
-                while (!done) {
-                    await sleep(2000);
-                };
+                var enemyId = await GetEnemy();
                 resolve(enemyId);
             });
 
 
-            MatrixGetPromise.then(async function (oppenentId) {
-                // if (oppenentId === -1) {
-                //     console.log("faild to load returned value");
-                //     return;
-                // }
-
+            MatrixGetPromise.then(function (oppenentId) {
                 darker.style.visibility = `hidden`;
                 darkerWriter.innerText = ``;
 
@@ -110,14 +64,16 @@ async function StartGame() {
                     request = 'getMoveNumber/';
                     webSocket.send(request);
 
-                    webSocket.onmessage = function (event) {
+                    webSocket.onmessage = async function (event) {
                         var tempMoveNumber = JSON.parse(event.data);
                         moveNumber = tempMoveNumber.moveNumber;
+
                         if (moveNumber === 2)
                             GetEnemyClickedCell();
-                        else {
+                        else
                             ShowYourTurn();
-                        }
+
+                        // await SetUpClientWebsocket(tempMoveNumber.enemyAddress);
                     }
                 }
             });
@@ -128,6 +84,52 @@ async function StartGame() {
         AllButtons[i].addEventListener(`click`, ButtonPressed);
     }
 }
+
+
+
+async function GetPlayerId() {
+    var request = "getPlayerId/";
+    var done = false;
+    var sended = false;
+
+    webSocket.onmessage = function (event) {
+        var tempId = JSON.parse(event.data);
+        playerId = tempId.playerId;
+        done = true;
+    };
+
+    while (!done) {
+        if (webSocket.readyState === webSocket.OPEN && !sended) {
+            webSocket.send(request);
+            sended = true;
+        }
+        await sleep(2000);
+    };
+    return done;
+}
+
+
+
+async function GetEnemy() {
+    request = 'getEnemy/';
+    var clientResponseInfo = { fieldMatrix: MyFieldMatrix };
+    var clientResponse = JSON.stringify(clientResponseInfo);
+    var enemyId;
+    var done = 0;
+
+    webSocket.onmessage = function (event) {
+        var tempData = JSON.parse(event.data);
+        enemyId = tempData.playerId;
+        done = true;
+    };
+
+    webSocket.send(request + clientResponse);
+    while (!done) {
+        await sleep(2000);
+    };
+    return enemyId;
+}
+
 
 
 
@@ -167,6 +169,7 @@ async function ButtonPressed(event) {
     button.style.visibility = `hidden`;
 
     var turn = document.getElementById(`turn`);
+    var darker = document.getElementById(`darker`);
     turn.style.visibility = `hidden`;
 
 
@@ -174,22 +177,9 @@ async function ButtonPressed(event) {
     var isEnd = false;
 
     const SendCell = new Promise(async function (resolve, reject) {
-        if (!isBotPlay) {
-            var done = false;
-            webSocket.onmessage = function (event) {
-                var tempResponse = JSON.parse(event.data);
-                isGot = tempResponse.isGot;
-                isEnd = tempResponse.isEnd;
-                done = true;
-            };
-
-            var clickedCell = { y: x, x: y };
-            var requestURl = 'clickedCell/';
-            var clientResponse = JSON.stringify(clickedCell);
-
-            webSocket.send(requestURl + clientResponse);
-            while (!done) { await sleep(2000); }
-        }
+        var tempCellInfo = await SendClickedCell(x, y);
+        isGot = tempCellInfo.isGot;
+        isEnd = tempCellInfo.isEnd;
         resolve(1);
     });
 
@@ -198,6 +188,8 @@ async function ButtonPressed(event) {
         if (isBotPlay) {
             if (EnemyFieldMatrix[x][y] === States.ship)
                 isGot = true;
+
+            await sleep(2000);
         }
 
         switch (isGot) {
@@ -218,7 +210,6 @@ async function ButtonPressed(event) {
                     }
                 }
 
-
                 if (ship.length !== 0) {
                     VisualizeDestroyedShip();
                     enemyShipsCount--;
@@ -228,6 +219,7 @@ async function ButtonPressed(event) {
                     //     return 1;
                     // }
                 }
+                darker.style.visibility = `hidden`;
                 break;
 
             default:
@@ -245,6 +237,34 @@ async function ButtonPressed(event) {
 
 
 
+
+async function SendClickedCell(x, y) {
+    var isGot = false;
+    var isEnd = false;
+    if (!isBotPlay) {
+
+        var done = false;
+        webSocket.onmessage = function (event) {
+            var tempResponse = JSON.parse(event.data);
+            isGot = tempResponse.isGot;
+            isEnd = tempResponse.isEnd;
+            done = true;
+        };
+
+        var clickedCell = { y: x, x: y };
+        var requestURl = 'clickedCell/';
+        var clientResponse = JSON.stringify(clickedCell);
+
+        webSocket.send(requestURl + clientResponse);
+        darker.style.visibility = `visible`;
+        while (!done) { await sleep(200); }
+    }
+    return { isGot: isGot, isEnd: isEnd };
+}
+
+
+
+
 async function GetEnemyClickedCell() {
     var y, x;
 
@@ -253,54 +273,35 @@ async function GetEnemyClickedCell() {
     ShowEnemyTurn();
 
     const EnemyClickedCell = new Promise(async function (resolve, reject) {
-        var done = false;
-        webSocket.onmessage = function (event) {
-            var tempCellInfo = JSON.parse(event.data);
-            y = tempCellInfo.y;
-            x = tempCellInfo.x;
-            done = true;
-        };
-
-        while (!done) { await sleep(2000); }
+        var tempCell = await ResiveEnemyCell();
+        if (tempCell.playerId != -3) {
+            y = tempCell.y;
+            x = tempCell.x;
+        }
         resolve(1);
     });
 
 
     EnemyClickedCell.then(function () {
-        var isGot = false;
-        var isEnd = false;
+        if (returned.playerId === -3) {
+            var darkerWriter = document.getElementById(`darkerWriter`);
+            darkerWriter.innerText = `oppenent has left the game`;
+            
+            var turn = document.getElementById(`turn`);
+            turn.style.visibility = `hidden`;
+            
+            webSocket.close();
+            setTimeout(StartEndGame(), 2000);
+            return;
+        }
 
-        // if (returned.playerId === -3) {
-        //     var darkerWriter = document.getElementById(`darkerWriter`);
-        //     darkerWriter.innerText = `oppenent has left the game`;
 
-        //     var turn = document.getElementById(`turn`);
-        //     turn.style.visibility = `hidden`;
-
-        //     setTimeout(StartEndGame(), 2000);
-        //     return;
-        // }
         var cell = document.getElementById(y.toString() + x.toString());
 
         if (MyFieldMatrix[y][x] === States.ship) {
             cell.getElementsByClassName(`got`)[0].style.visibility = `visible`;
             MyFieldMatrix[y][x] = States.destroyed;
             myShipCellsCount--;
-
-            ship.push({ y: x, x: y });
-            CheckCell(y, x, -1, -1);
-
-            if (ship.length != 0)
-                isEnd = true;
-            else
-                isEnd = false;
-            isGot = true;
-
-
-            // if (myShipCellsCount === 0) {
-            //     await GameOver();
-            //     return;
-            // }
 
             GetEnemyClickedCell();
         }
@@ -309,20 +310,30 @@ async function GetEnemyClickedCell() {
             MyFieldMatrix[y][x] = States.missed;
             darker.style.visibility = `hidden`;
 
-            isGot = false;
-            isEnd = false;
-
             ShowYourTurn();
         }
-
-
-        var requestURl = 'enemyCellResponce/';
-        var clientResponseInfo = { isGot: isGot, isEnd: isEnd };
-        var clientResponse = JSON.stringify(clientResponseInfo);
-
-        webSocket.send(requestURl + clientResponse);
     });
 }
+
+
+
+
+async function ResiveEnemyCell() {
+    var done = false;
+    var y, x, playerId;
+    webSocket.onmessage = function (event) {
+        var tempCellInfo = JSON.parse(event.data);
+        y = tempCellInfo.y;
+        x = tempCellInfo.x;
+        playerId = tempCellInfo.playerId;
+        done = true;
+    };
+
+    while (!done) { await sleep(200); }
+    return { y: y, x: x, playerId: playerId };
+}
+
+
 
 
 // function SetActionTimer() {

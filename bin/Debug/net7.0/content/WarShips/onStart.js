@@ -11,8 +11,10 @@ const MyFieldMatrix = new Array(10);
 function InitMatrix() {
     for (let i = 0; i < MyFieldMatrix.length; i++) {
         MyFieldMatrix[i] = new Array(10);
+        EnemyFieldMatrix[i] = new Array(10);
         for (let j = 0; j < MyFieldMatrix[i].length; j++) {
             MyFieldMatrix[i][j] = States.none;
+            EnemyFieldMatrix[i][j] = States.none;
         }
     }
 }
@@ -274,7 +276,7 @@ function PutShipIntoCell(id) {
         var offsetLeft = getCoords(AllCells[i]).left;
         var offsetTop = getCoords(AllCells[i]).top;
 
-        if (Math.abs(parseInt(getCoords(object).left) - parseInt(offsetLeft)) <= offset && 
+        if (Math.abs(parseInt(getCoords(object).left) - parseInt(offsetLeft)) <= offset &&
             Math.abs(parseInt(getCoords(object).top) - parseInt(offsetTop)) <= offset) {
 
             for (let j = 0; j < AllCells.length; j++) {

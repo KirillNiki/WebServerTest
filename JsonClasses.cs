@@ -7,11 +7,12 @@ class PlayerIndex
 
 class MatrixData
 {
-    public int[][] fieldMatrix { get; set; }
+    public Client.States[][] fieldMatrix { get; set; }
 }
 
 class CellData
 {
+    public int playerId { get; set; }
     public int y { get; set; }
     public int x { get; set; }
 }
@@ -29,6 +30,5 @@ class SuccessFulOperation
 
 class MoveNumber
 {
-    public int playerId { get; set; }
     public int moveNumber { get; set; }
 }
