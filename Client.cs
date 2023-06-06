@@ -18,8 +18,7 @@ class Client
     public enum States { none, destroyed, ship, missed, busy };
     private List<(int, int)> ship = new List<(int, int)>(4);
 
-    private const int youKickedId = -5;
-    private const int errorId = -4;
+    private const int youKickedId = -4;
     private const int enemyKickedId = -3;
     private const int botId = -2;
     private const int maxInactionTime = 40000; //millisec
@@ -50,6 +49,7 @@ class Client
 
     private WebSocket ClientWebSocket;
     private string resivedDataString = "";
+    private int moveNumber;
     private int playerId;
     public int enemyId = -1;
 
@@ -262,13 +262,18 @@ class Client
         if (playerId < enemyId)
         {
             await SendSomeData(new MoveNumber() { moveNumber = 1 }, ClientWebSocket);
+            moveNumber = 1;
             // lastActionTimer.Start();
         }
         else
         {
             await SendSomeData(new MoveNumber() { moveNumber = 2 }, ClientWebSocket);
+            moveNumber = 2;
             // lastActionTimer.Stop();
         }
+
+        isPlayerInited = true;
+        onInitEnemyKick?.Invoke();
     }
 
 
@@ -300,24 +305,34 @@ class Client
     {
         Console.WriteLine(">>>>>>>>  kicking player" + playerId);
         Server.waitingTimer.Stop();
-        
+
         if (Server.waiterId == playerId)
         {
-            Console.WriteLine(">>>>>>>>>>>>>>");
-            Console.WriteLine(Server.waiterId);
             Server.waiterId = -1;
-            Console.WriteLine(Server.waiterId);
         }
 
         if (ClientWebSocket.State == WebSocketState.Open)
             await SendSomeData(new PlayerIndex() { playerId = youKickedId }, ClientWebSocket);
         RemovePlayer(playerId);
 
+
+        Console.WriteLine(">>>>>>>>>>>>>1");
         if (enemyId != -1 && Server.AllCients[enemyId] != null)
         {
+            Console.WriteLine(">>>>>>>>>>>>>2");
             var enemy = Server.AllCients[enemyId];
-            if (enemy != null && enemy.ClientWebSocket.State == WebSocketState.Open)
+            if (enemy.ClientWebSocket.State == WebSocketState.Open && enemy.isPlayerInited)
+            {
+                Console.WriteLine(">>>>>>>>>>>>>21");
                 await SendSomeData(new PlayerIndex { playerId = enemyKickedId }, enemy.ClientWebSocket);
+                Console.WriteLine(">>>>>>>>>>>>>22");
+            }
+            else
+            {
+                Console.WriteLine(">>>>>>>>>>>>>31");
+                onInitEnemyKick += async () => await SendSomeData(new PlayerIndex { playerId = enemyKickedId }, enemy.ClientWebSocket);
+                Console.WriteLine(">>>>>>>>>>>>>32");
+            }
         }
         kickedFlag = true;
     }

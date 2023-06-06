@@ -19,13 +19,9 @@ class CellData
 
 class IsGot
 {
+    public int playerId { get; set; }
     public bool isGot { get; set; }
     public bool isEnd { get; set; }
-}
-
-class SuccessFulOperation
-{
-    public int success { get; set; }
 }
 
 class MoveNumber

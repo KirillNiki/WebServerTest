@@ -73,7 +73,7 @@ async function StartGame() {
                         else
                             ShowYourTurn();
 
-                        // await SetUpClientWebsocket(tempMoveNumber.enemyAddress);
+                        
                     }
                 }
             });
@@ -173,13 +173,17 @@ async function ButtonPressed(event) {
     turn.style.visibility = `hidden`;
 
 
+    var returnedPlayerId;
     var isGot = false;
     var isEnd = false;
 
     const SendCell = new Promise(async function (resolve, reject) {
         var tempCellInfo = await SendClickedCell(x, y);
-        isGot = tempCellInfo.isGot;
-        isEnd = tempCellInfo.isEnd;
+        returnedPlayerId = tempCellInfo.playerId;
+        if (returnedPlayerId != -3) {
+            isGot = tempCellInfo.isGot;
+            isEnd = tempCellInfo.isEnd;
+        }
         resolve(1);
     });
 
@@ -191,6 +195,10 @@ async function ButtonPressed(event) {
 
             await sleep(2000);
         }
+        else if (returnedPlayerId == -3) {
+            await OpponentLeft();
+        }
+        
 
         switch (isGot) {
             case true:
@@ -241,6 +249,8 @@ async function ButtonPressed(event) {
 async function SendClickedCell(x, y) {
     var isGot = false;
     var isEnd = false;
+    var returnedPlayerId;
+
     if (!isBotPlay) {
 
         var done = false;
@@ -248,6 +258,7 @@ async function SendClickedCell(x, y) {
             var tempResponse = JSON.parse(event.data);
             isGot = tempResponse.isGot;
             isEnd = tempResponse.isEnd;
+            returnedPlayerId = tempResponse.playerId;
             done = true;
         };
 
@@ -259,14 +270,14 @@ async function SendClickedCell(x, y) {
         darker.style.visibility = `visible`;
         while (!done) { await sleep(200); }
     }
-    return { isGot: isGot, isEnd: isEnd };
+    return { isGot: isGot, isEnd: isEnd, playerId: returnedPlayerId };
 }
 
 
 
 
 async function GetEnemyClickedCell() {
-    var y, x;
+    var y, x, returnedPlayerId;
 
     var darker = document.getElementById(`darker`);
     darker.style.visibility = `visible`;
@@ -278,21 +289,14 @@ async function GetEnemyClickedCell() {
             y = tempCell.y;
             x = tempCell.x;
         }
+        returnedPlayerId = tempCell.playerId;
         resolve(1);
     });
 
 
-    EnemyClickedCell.then(function () {
-        if (returned.playerId === -3) {
-            var darkerWriter = document.getElementById(`darkerWriter`);
-            darkerWriter.innerText = `oppenent has left the game`;
-            
-            var turn = document.getElementById(`turn`);
-            turn.style.visibility = `hidden`;
-            
-            webSocket.close();
-            setTimeout(StartEndGame(), 2000);
-            return;
+    EnemyClickedCell.then(async function () {
+        if (returnedPlayerId === -3) {
+            await OpponentLeft();
         }
 
 
@@ -478,27 +482,27 @@ function GameOver() {
 
 
 
-async function SendAliveTimer() {
-    if (!isBotPlay) {
-        var request = 'alive';
-        var clientResponseInfo = { currentPlayerIndex: playerId.currentPlayerIndex };
-        var clientResponse = JSON.stringify(clientResponseInfo);
+// async function SendAliveTimer() {
+//     if (!isBotPlay) {
+//         var request = 'alive';
+//         var clientResponseInfo = { currentPlayerIndex: playerId.currentPlayerIndex };
+//         var clientResponse = JSON.stringify(clientResponseInfo);
 
-        var returnsed = await SendAjaxRequest(request, clientResponse);
-    }
-}
+//         var returnsed = await SendAjaxRequest(request, clientResponse);
+//     }
+// }
 
 
 
-function OnUnload() {
-    if (!isBotPlay) {
-        var request = 'disconnect';
-        var clientResponseInfo = { currentPlayerIndex: playerId.currentPlayerIndex };
-        var clientResponse = JSON.stringify(clientResponseInfo);
+// function OnUnload() {
+//     if (!isBotPlay) {
+//         var request = 'disconnect';
+//         var clientResponseInfo = { currentPlayerIndex: playerId.currentPlayerIndex };
+//         var clientResponse = JSON.stringify(clientResponseInfo);
 
-        SendAjaxRequest(request, clientResponse);
-    }
-}
+//         SendAjaxRequest(request, clientResponse);
+//     }
+// }
 
 
 
@@ -519,4 +523,18 @@ function ShowEnemyTurn() {
     var turnWriter = document.getElementById(`turnWriter`);
     turnWriter.style.marginLeft = `6%`;
     turnWriter.innerText = `opponents turn`;
+}
+
+
+async function OpponentLeft() {
+    var darkerWriter = document.getElementById(`darkerWriter`);
+    darkerWriter.innerText = `oppenent has left the game`;
+
+    var turn = document.getElementById(`turn`);
+    turn.style.visibility = `hidden`;
+
+    webSocket.close();
+    await sleep(2000);
+    StartEndGame();
+    return;
 }
