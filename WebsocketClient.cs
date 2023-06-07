@@ -476,26 +476,6 @@ class Client
 
 
 
-    // public void EndGame()
-    // {
-    //     var playerId = System.Web.HttpUtility.UrlDecode(Headers.File.Substring(("/content/WarShips/endGame").Length + 1));
-    //     Server.CurrentPlayerIndex? returnedId = JsonSerializer.Deserialize<Server.CurrentPlayerIndex>(playerId);
-
-    //     // SendSomeData(new Server.SuccessFulOperation() { success = 1 }, client);
-
-    //     // BattleInfo? tempBattleInfo = Server.AllBattleInfo.Find(battleInfo =>
-    //     //     battleInfo.Player1Id == returnedId.currentPlayerIndex ||
-    //     //     battleInfo.Player2Id == returnedId.currentPlayerIndex
-    //     // );
-
-    //     // Server.AllBattleInfo.Remove(tempBattleInfo);
-    //     // RemovePlayer(AllPlayersInfo[returnedId.currentPlayerIndex].enemyIndex, false);
-    //     // RemovePlayer(returnedId.currentPlayerIndex, false);
-    // }
-
-
-
-
     public async static Task SendSomeData(Object classType, WebSocket webSocket)
     {
         string jsonFile = JsonSerializer.Serialize(classType);

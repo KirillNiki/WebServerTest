@@ -140,18 +140,6 @@ function sleep(ms) {
 
 
 
-// async function SendAjaxRequest(requestURl, clientResponse = -1) {
-//     var responde;
-//     if (clientResponse != -1)
-//         responde = await fetch(`${requestURl}/${clientResponse}`);
-//     else
-//         responde = await fetch(requestURl);
-
-//     var returned = await responde.text();
-//     return JSON.parse(returned);
-// }
-
-
 
 const Sides = { up: 0, down: 1, right: 2, left: 3 };
 const BySide = { byside: 0, notbyside: 1 };
@@ -349,23 +337,6 @@ async function ResiveEnemyCell() {
     return { y: y, x: x, playerId: playerId };
 }
 
-
-
-
-// function SetActionTimer() {
-//     actionTimer = setTimeout(() => {
-//         const darker = document.getElementById(`darker`);
-//         darker.style.visibility = `visible`;
-
-//         const turn = document.getElementById(`turn`);
-//         turn.style.visibility = `hidden`;
-
-//         setTimeout(() => {
-//             alert(`you had been kicked`);
-//             StartEndGame();
-//         }, 100);
-//     }, 40000);
-// }
 
 
 
