@@ -2,7 +2,7 @@ window.addEventListener('load', ShipsInit);
 window.addEventListener('load', InitMatrix);
 window.addEventListener('load', HideImages);
 window.addEventListener('load', Resize);
-window.addEventListener('load', AutomaticPlacing);
+// window.addEventListener('load', AutomaticPlacing);
 window.addEventListener('resize', Resize);
 
 
@@ -466,7 +466,7 @@ function StartEndGame(button) {
             turn.style.visibility = `hidden`;
 
 
-            AutomaticPlacing();
+            // AutomaticPlacing();
         }
     }
 }
