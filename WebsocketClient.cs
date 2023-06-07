@@ -64,9 +64,9 @@ class Client
             resiveTask.Start();
             resiveTask.Wait();
 
-            if (resivedDataString != "")
-                Console.WriteLine(resivedDataString);
-            Thread.Sleep(2000);
+            // if (resivedDataString != "")
+                //Console.WriteLine(resivedDataString);
+            // Thread.Sleep(2000);
 
 
             if (resivedDataString != "")
@@ -79,7 +79,7 @@ class Client
                 {
                     request = resivedDataString.Substring(0, slashIndex);
                     playerInfo = resivedDataString.Substring(slashIndex + 1, resivedDataString.Length - 1 - slashIndex);
-                    Console.WriteLine(playerInfo);
+                    //Console.WriteLine(playerInfo);
                 }
                 Task sendTask;
 
@@ -114,7 +114,7 @@ class Client
         kickTask.Start();
         kickTask.Wait();
 
-        Console.WriteLine("<<<<<<<<<<<<<<<<<<<<<<" + playerId);
+        //Console.WriteLine("<<<<<<<<<<<<<<<<<<<<<<" + playerId);
     }
 
 
@@ -160,7 +160,7 @@ class Client
         }
         catch (Exception e)
         {
-            Console.WriteLine(">>>>>>>error:  " + e.Message);
+            //Console.WriteLine(">>>>>>>error:  " + e.Message);
         }
     }
 
@@ -173,7 +173,7 @@ class Client
         await SendSomeData(new PlayerIndex { playerId = playerId }, ClientWebSocket);
         enemyId = -1;
 
-        Console.WriteLine(playerId);
+        //Console.WriteLine(playerId);
         Server.AllCients[playerId] = this;
 
         Server.AllBattleFields[playerId] = new States[fieldWidth][];
@@ -195,7 +195,7 @@ class Client
         if (Server.waiterId == -1)
         {
             Server.waiterId = playerId;
-            Console.WriteLine(Server.waiterId);
+            //Console.WriteLine(Server.waiterId);
 
             int tempWaiter = Server.waiterId;
             newClientConnected += async () => await GetEnemy(tempWaiter);
@@ -216,11 +216,9 @@ class Client
 
             for (int i = 0; i < Server.AllCients.Length; i++)
             {
-                if (Server.AllCients[i] != null)
-                    Console.WriteLine($"{i}>>>>>>>>>>>>>{Server.AllCients[i].enemyId}");
+                // if (Server.AllCients[i] != null)
+                    //Console.WriteLine($"{i}>>>>>>>>>>>>>{Server.AllCients[i].enemyId}");
             }
-
-            
         }
     }
 
@@ -246,36 +244,36 @@ class Client
         else
             freePlayerId = waiterId;
 
-        Console.WriteLine(">>>>>>>>>>>>>>>>>0");
-        Console.WriteLine(freePlayerId);
+        //Console.WriteLine(">>>>>>>>>>>>>>>>>0");
+        //Console.WriteLine(freePlayerId);
         freePlayer = Server.AllCients[freePlayerId];
 
-        Console.WriteLine(playerId);
-        Console.WriteLine(">>>>>>>>>>>>>>>>>>>1");
+        //Console.WriteLine(playerId);
+        //Console.WriteLine(">>>>>>>>>>>>>>>>>>>1");
 
-        for (int i = 0; i < Server.AllCients.Length; i++)
-        {
-            if (Server.AllCients[i] != null)
-                Console.WriteLine(Server.AllCients[i].enemyId);
-            else
-                Console.WriteLine("...");
-        }
+        // for (int i = 0; i < Server.AllCients.Length; i++)
+        // {
+        //     if (Server.AllCients[i] != null)
+        //         //Console.WriteLine(Server.AllCients[i].enemyId);
+        //     else
+        //         //Console.WriteLine("...");
+        // }
 
 
-        if (Server.AllCients[playerId] == null)
-            Console.WriteLine(playerId);
+        // if (Server.AllCients[playerId] == null)
+            //Console.WriteLine(playerId);
 
         Server.AllCients[playerId].enemyId = freePlayerId;
 
 
-        Console.WriteLine(">>>>>>>>>>>>>>>>>>>2");
-        for (int i = 0; i < Server.AllCients.Length; i++)
-        {
-            if (Server.AllCients[i] != null)
-                Console.WriteLine(Server.AllCients[i].enemyId);
-            else
-                Console.WriteLine("...");
-        }
+        // //Console.WriteLine(">>>>>>>>>>>>>>>>>>>2");
+        // for (int i = 0; i < Server.AllCients.Length; i++)
+        // {
+        //     if (Server.AllCients[i] != null)
+        //         //Console.WriteLine(Server.AllCients[i].enemyId);
+        //     else
+        //         //Console.WriteLine("...");
+        // }
 
 
         if (ClientWebSocket.State == WebSocketState.Open)
@@ -287,7 +285,7 @@ class Client
 
     private async Task SendMoveNumber()
     {
-        Console.WriteLine(">>>>>>>>>>> sending moveNumber" + playerId);
+        //Console.WriteLine(">>>>>>>>>>> sending moveNumber" + playerId);
         if (playerId < enemyId)
         {
             if (ClientWebSocket.State == WebSocketState.Open)
@@ -310,25 +308,25 @@ class Client
 
     private static void RemovePlayer(int playerIndex)
     {
-        Console.WriteLine(">>>>>>>>>>>> removing player");
-        for (int i = 0; i < Server.AllCients.Length; i++)
-        {
-            if (Server.AllCients[i] != null)
-                Console.WriteLine(Server.AllCients[i].enemyId);
-            else
-                Console.WriteLine("...");
-        }
+        //Console.WriteLine(">>>>>>>>>>>> removing player");
+        // for (int i = 0; i < Server.AllCients.Length; i++)
+        // {
+        //     if (Server.AllCients[i] != null)
+        //         //Console.WriteLine(Server.AllCients[i].enemyId);
+        //     else
+        //         //Console.WriteLine("...");
+        // }
 
         Server.AllCients[playerIndex] = null;
         Server.allSutableIdes.Add(playerIndex);
 
-        for (int i = 0; i < Server.AllCients.Length; i++)
-        {
-            if (Server.AllCients[i] != null)
-                Console.WriteLine(Server.AllCients[i].enemyId);
-            else
-                Console.WriteLine("...");
-        }
+        // for (int i = 0; i < Server.AllCients.Length; i++)
+        // {
+        //     if (Server.AllCients[i] != null)
+        //         //Console.WriteLine(Server.AllCients[i].enemyId);
+        //     else
+        //         //Console.WriteLine("...");
+        // }
     }
 
 
@@ -336,7 +334,7 @@ class Client
 
     private async Task KickPlayer()
     {
-        Console.WriteLine(">>>>>>>>  kicking player" + playerId);
+        //Console.WriteLine(">>>>>>>>  kicking player" + playerId);
 
         if (Server.waiterId == playerId)
         {
@@ -380,8 +378,8 @@ class Client
 
     public async static Task SendBot()
     {
-        Console.WriteLine(">>>>>>>>>> sending bot");
-        Console.WriteLine(Server.waiterId);
+        //Console.WriteLine(">>>>>>>>>> sending bot");
+        //Console.WriteLine(Server.waiterId);
         if (Server.AllCients[Server.waiterId].ClientWebSocket.State == WebSocketState.Open)
             await SendSomeData(new PlayerIndex() { playerId = botId }, Server.AllCients[Server.waiterId].ClientWebSocket);
         RemovePlayer(Server.waiterId);
@@ -395,8 +393,8 @@ class Client
 
     private async Task GetClickedCell(string cellInfo)
     {
-        Console.WriteLine(">>>>>>>>>>>> got celldata" + playerId);
-        Console.WriteLine(cellInfo);
+        //Console.WriteLine(">>>>>>>>>>>> got celldata" + playerId);
+        //Console.WriteLine(cellInfo);
         CellData? returnedCellData = JsonSerializer.Deserialize<CellData>(cellInfo);
 
         IsGot cellResponse = new IsGot();

@@ -26,7 +26,7 @@ class GetWebPage
 
 
         Headers = Parse(request);
-        Console.WriteLine($"[{context.Request.RemoteEndPoint}]\nReal path: {Headers.RealPath}\nFile: {Headers.File}\nDate: {DateTime.Now}");
+        // Console.WriteLine($"[{context.Request.RemoteEndPoint}]\nReal path: {Headers.RealPath}\nFile: {Headers.File}\nDate: {DateTime.Now}");
 
         if (Headers.RealPath.IndexOf("..") != -1)
         {
@@ -92,7 +92,7 @@ class GetWebPage
             response.ContentType = contentType;
             response.StatusCode = (int) HttpStatusCode.OK;
             response.ContentLength64 = data.Length;
-            Console.WriteLine(contentType);
+            // Console.WriteLine(contentType);
 
             await output.WriteAsync(data);
             await output.FlushAsync();
