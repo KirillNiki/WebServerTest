@@ -16,8 +16,9 @@ var moveNumber;
 
 
 let webSocket;
-let domain = "192.168.0.53:9000";
+let domain = window.location.host;
 let clientWebSocket;
+let InatciveTimer;
 
 
 
@@ -70,10 +71,10 @@ async function StartGame() {
 
                         if (moveNumber === 2)
                             GetEnemyClickedCell();
-                        else
+                        else {
                             ShowYourTurn();
-
-                        
+                            InatciveTimer = SetActionTimer();
+                        }
                     }
                 }
             });
@@ -103,7 +104,7 @@ async function GetPlayerId() {
             webSocket.send(request);
             sended = true;
         }
-        await sleep(2000);
+        await sleep(200);
     };
     return done;
 }
@@ -124,9 +125,7 @@ async function GetEnemy() {
     };
 
     webSocket.send(request + clientResponse);
-    while (!done) {
-        await sleep(2000);
-    };
+    while (!done) { await sleep(200); };
     return enemyId;
 }
 
@@ -162,6 +161,8 @@ const TopRight = { top: 0, right: 1 };
 let ship = [];
 
 async function ButtonPressed(event) {
+    clearTimeout(InatciveTimer);
+
     let button = event.target;
     let parent = button.parentElement;
     let y = parent.y;
@@ -170,7 +171,10 @@ async function ButtonPressed(event) {
 
     var turn = document.getElementById(`turn`);
     var darker = document.getElementById(`darker`);
+    darker.style.visibility = `visible`;
     turn.style.visibility = `hidden`;
+    var darkerWriter = document.getElementById(`darkerWriter`);
+    darkerWriter.innerText = ``;
 
 
     var returnedPlayerId;
@@ -197,8 +201,9 @@ async function ButtonPressed(event) {
         }
         else if (returnedPlayerId == -3) {
             await OpponentLeft();
+            return;
         }
-        
+
 
         switch (isGot) {
             case true:
@@ -222,12 +227,13 @@ async function ButtonPressed(event) {
                     VisualizeDestroyedShip();
                     enemyShipsCount--;
 
-                    // if (enemyShipsCount === 0) {
-                    //     await GameOver();
-                    //     return 1;
-                    // }
+                    if (enemyShipsCount === 0) {
+                        await GameOver();
+                        return;
+                    }
                 }
                 darker.style.visibility = `hidden`;
+                InatciveTimer = SetActionTimer();
                 break;
 
             default:
@@ -267,7 +273,6 @@ async function SendClickedCell(x, y) {
         var clientResponse = JSON.stringify(clickedCell);
 
         webSocket.send(requestURl + clientResponse);
-        darker.style.visibility = `visible`;
         while (!done) { await sleep(200); }
     }
     return { isGot: isGot, isEnd: isEnd, playerId: returnedPlayerId };
@@ -297,6 +302,7 @@ async function GetEnemyClickedCell() {
     EnemyClickedCell.then(async function () {
         if (returnedPlayerId === -3) {
             await OpponentLeft();
+            return;
         }
 
 
@@ -307,6 +313,11 @@ async function GetEnemyClickedCell() {
             MyFieldMatrix[y][x] = States.destroyed;
             myShipCellsCount--;
 
+            if (myShipCellsCount == 0) {
+                GameOver();
+                return;
+            }
+
             GetEnemyClickedCell();
         }
         else {
@@ -315,6 +326,7 @@ async function GetEnemyClickedCell() {
             darker.style.visibility = `hidden`;
 
             ShowYourTurn();
+            InatciveTimer = SetActionTimer();
         }
     });
 }
@@ -459,38 +471,34 @@ function VisualizeDestroyedShip() {
 
 
 
-function GameOver() {
-    setTimeout(async () => {
-        if (!isBotPlay && enemyShipsCount === 0) {
-            var endGame = { currentPlayerIndex: playerId.currentPlayerIndex };
-            var requestURl = 'endGame';
-            var clientResponse = JSON.stringify(endGame);
+async function GameOver() {
+    if (myShipsCount === 0 || myShipCellsCount === 0) {
+        alert(`Game over, you lost`);
+    }
+    else if (enemyShipsCount === 0) {
+        alert(`Game over, you won`);
+    }
 
-            var returned = await SendAjaxRequest(requestURl, clientResponse);
-        }
-
-        if (myShipsCount === 0 || myShipCellsCount === 0) {
-            alert(`Game over, you lost`);
-        }
-        else if (enemyShipsCount === 0) {
-            alert(`Game over, you won`);
-        }
-
-        StartEndGame();
-    }, 1000);
+    webSocket.close();
+    await sleep(2000);
+    StartEndGame();
 }
 
 
 
-// async function SendAliveTimer() {
-//     if (!isBotPlay) {
-//         var request = 'alive';
-//         var clientResponseInfo = { currentPlayerIndex: playerId.currentPlayerIndex };
-//         var clientResponse = JSON.stringify(clientResponseInfo);
 
-//         var returnsed = await SendAjaxRequest(request, clientResponse);
-//     }
-// }
+function SetActionTimer() {
+    return setTimeout(async function () {
+        var darker = document.getElementById(`darker`);
+        darker.style.visibility = `visible`;
+        var darkerWriter = document.getElementById(`darkerWriter`);
+        darkerWriter.innerText = `you have been kicked`;
+
+        webSocket.close();
+        await sleep(2000);
+        StartEndGame();
+    }, 40000);
+}
 
 
 
@@ -536,5 +544,4 @@ async function OpponentLeft() {
     webSocket.close();
     await sleep(2000);
     StartEndGame();
-    return;
 }

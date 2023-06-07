@@ -10,7 +10,6 @@ using System.Net;
 using System.Web;
 using System.Text.Json;
 using System.Timers;
-// using WebSocketSharp;
 
 
 class Client
@@ -41,8 +40,8 @@ class Client
         }
     }
     private delegate void OnInitEnemyKick();
-    private event OnInitEnemyKick onInitEnemyKick;
-    private bool isPlayerInited = false;
+    private event OnInitEnemyKick onInitEnemyReadyKick;
+    private bool isReadyReciveKick = false;
 
 
 
@@ -52,10 +51,6 @@ class Client
     private int moveNumber;
     private int playerId;
     public int enemyId = -1;
-
-    private States[][] fieldMatrix = new States[fieldWidth][];
-    public System.Timers.Timer lastActionTimer = new Timer(maxInactionTime);
-    private bool kickedFlag = false;
 
 
 
@@ -69,8 +64,10 @@ class Client
             resiveTask.Start();
             resiveTask.Wait();
 
+            if (resivedDataString != "")
+                Console.WriteLine(resivedDataString);
             Thread.Sleep(2000);
-            Console.WriteLine(resivedDataString);
+
 
             if (resivedDataString != "")
             {
@@ -113,12 +110,10 @@ class Client
         }
 
 
-        if (!kickedFlag)
-        {
-            Task kickTask = new Task(async () => await KickPlayer());
-            kickTask.Start();
-            kickTask.Wait();
-        }
+        Task kickTask = new Task(async () => await KickPlayer());
+        kickTask.Start();
+        kickTask.Wait();
+
         Console.WriteLine("<<<<<<<<<<<<<<<<<<<<<<" + playerId);
     }
 
@@ -127,7 +122,6 @@ class Client
 
     private async Task ReciveData(CancellationTokenSource cancellationTokenSource)
     {
-        Console.WriteLine(">>>>>>>>>>>>> getting Message" + playerId);
         try
         {
             int chunkCounter = 0;
@@ -141,7 +135,6 @@ class Client
 
                 if (chunk.MessageType == WebSocketMessageType.Close)
                 {
-                    Console.WriteLine(">>>>>>>>>>>>> connection closed");
                     cancellationTokenSource.Cancel();
                     break;
                 }
@@ -169,8 +162,6 @@ class Client
         {
             Console.WriteLine(">>>>>>>error:  " + e.Message);
         }
-
-        Console.WriteLine(">>>>>>>>>>>>> end getting Message" + playerId);
     }
 
 
@@ -184,8 +175,10 @@ class Client
 
         Console.WriteLine(playerId);
         Server.AllCients[playerId] = this;
-        for (int i = 0; i < fieldMatrix.Length; i++)
-            fieldMatrix[i] = new States[fieldWidth];
+
+        Server.AllBattleFields[playerId] = new States[fieldWidth][];
+        for (int i = 0; i < Server.AllBattleFields[playerId].Length; i++)
+            Server.AllBattleFields[playerId][i] = new States[fieldWidth];
 
         Server.allSutableIdes.RemoveAt(0);
     }
@@ -196,23 +189,25 @@ class Client
     private async Task FindEnemy(string playerInfo)
     {
         MatrixData? returnedMatrixData = JsonSerializer.Deserialize<MatrixData>(playerInfo);
-        Array.Copy(returnedMatrixData.fieldMatrix, fieldMatrix, returnedMatrixData.fieldMatrix.Length);
+        Array.Copy(returnedMatrixData.fieldMatrix, Server.AllBattleFields[playerId], returnedMatrixData.fieldMatrix.Length);
 
 
         if (Server.waiterId == -1)
         {
-            Console.WriteLine(">>>>>>>>>>>>>>>>>>>>>>>>1");
             Server.waiterId = playerId;
             Console.WriteLine(Server.waiterId);
 
-            newClientConnected += async () => await GetEnemy();
+            int tempWaiter = Server.waiterId;
+            newClientConnected += async () => await GetEnemy(tempWaiter);
             Server.waitingTimer.Start();
         }
         else
         {
-            Console.WriteLine(">>>>>>>>>>>>>>>>>>>>>>>>2");
+            int tempWaiter = Server.waiterId;
+            Server.waiterId = -1;
+
             Server.waitingTimer.Stop();
-            await GetEnemy(Server.waiterId);
+            await GetEnemy(tempWaiter);
 
             newClientConnectedReal?.Invoke();
             for (int i = 0; i < eventDelegates.Count; i++)
@@ -225,17 +220,19 @@ class Client
                     Console.WriteLine($"{i}>>>>>>>>>>>>>{Server.AllCients[i].enemyId}");
             }
 
-            Server.waiterId = -1;
+            
         }
     }
 
 
 
 
-    private async Task GetEnemy(int freePlayerId = -1)
+    private async Task GetEnemy(int waiterId)
     {
         Client freePlayer;
-        if (freePlayerId == -1)
+        int freePlayerId = -1;
+
+        if (waiterId == playerId)
         {
             for (int i = 0; i < Server.AllCients.Length; i++)
             {
@@ -246,10 +243,43 @@ class Client
                 }
             }
         }
+        else
+            freePlayerId = waiterId;
+
+        Console.WriteLine(">>>>>>>>>>>>>>>>>0");
+        Console.WriteLine(freePlayerId);
         freePlayer = Server.AllCients[freePlayerId];
 
+        Console.WriteLine(playerId);
+        Console.WriteLine(">>>>>>>>>>>>>>>>>>>1");
+
+        for (int i = 0; i < Server.AllCients.Length; i++)
+        {
+            if (Server.AllCients[i] != null)
+                Console.WriteLine(Server.AllCients[i].enemyId);
+            else
+                Console.WriteLine("...");
+        }
+
+
+        if (Server.AllCients[playerId] == null)
+            Console.WriteLine(playerId);
+
         Server.AllCients[playerId].enemyId = freePlayerId;
-        await SendSomeData(new PlayerIndex() { playerId = freePlayerId }, ClientWebSocket);
+
+
+        Console.WriteLine(">>>>>>>>>>>>>>>>>>>2");
+        for (int i = 0; i < Server.AllCients.Length; i++)
+        {
+            if (Server.AllCients[i] != null)
+                Console.WriteLine(Server.AllCients[i].enemyId);
+            else
+                Console.WriteLine("...");
+        }
+
+
+        if (ClientWebSocket.State == WebSocketState.Open)
+            await SendSomeData(new PlayerIndex() { playerId = freePlayerId }, ClientWebSocket);
     }
 
 
@@ -258,22 +288,21 @@ class Client
     private async Task SendMoveNumber()
     {
         Console.WriteLine(">>>>>>>>>>> sending moveNumber" + playerId);
-        // lastActionTimer.Elapsed += async (Object source, ElapsedEventArgs e) => await KickPlayer();
         if (playerId < enemyId)
         {
-            await SendSomeData(new MoveNumber() { moveNumber = 1 }, ClientWebSocket);
+            if (ClientWebSocket.State == WebSocketState.Open)
+                await SendSomeData(new MoveNumber() { moveNumber = 1 }, ClientWebSocket);
             moveNumber = 1;
-            // lastActionTimer.Start();
         }
         else
         {
-            await SendSomeData(new MoveNumber() { moveNumber = 2 }, ClientWebSocket);
+            if (ClientWebSocket.State == WebSocketState.Open)
+                await SendSomeData(new MoveNumber() { moveNumber = 2 }, ClientWebSocket);
             moveNumber = 2;
-            // lastActionTimer.Stop();
-        }
 
-        isPlayerInited = true;
-        onInitEnemyKick?.Invoke();
+            isReadyReciveKick = true;
+            onInitEnemyReadyKick?.Invoke();
+        }
     }
 
 
@@ -286,6 +315,8 @@ class Client
         {
             if (Server.AllCients[i] != null)
                 Console.WriteLine(Server.AllCients[i].enemyId);
+            else
+                Console.WriteLine("...");
         }
 
         Server.AllCients[playerIndex] = null;
@@ -295,6 +326,8 @@ class Client
         {
             if (Server.AllCients[i] != null)
                 Console.WriteLine(Server.AllCients[i].enemyId);
+            else
+                Console.WriteLine("...");
         }
     }
 
@@ -304,37 +337,42 @@ class Client
     private async Task KickPlayer()
     {
         Console.WriteLine(">>>>>>>>  kicking player" + playerId);
-        Server.waitingTimer.Stop();
 
         if (Server.waiterId == playerId)
         {
             Server.waiterId = -1;
+            Server.waitingTimer.Stop();
+
+            if (enemyId != -1)
+                Server.waiterId = enemyId;
         }
+
 
         if (ClientWebSocket.State == WebSocketState.Open)
             await SendSomeData(new PlayerIndex() { playerId = youKickedId }, ClientWebSocket);
-        RemovePlayer(playerId);
+        if (Server.AllCients[playerId] != null)
+            RemovePlayer(playerId);
 
-
-        Console.WriteLine(">>>>>>>>>>>>>1");
         if (enemyId != -1 && Server.AllCients[enemyId] != null)
         {
-            Console.WriteLine(">>>>>>>>>>>>>2");
             var enemy = Server.AllCients[enemyId];
-            if (enemy.ClientWebSocket.State == WebSocketState.Open && enemy.isPlayerInited)
+            enemy.onInitEnemyReadyKick += async () =>
             {
-                Console.WriteLine(">>>>>>>>>>>>>21");
-                await SendSomeData(new PlayerIndex { playerId = enemyKickedId }, enemy.ClientWebSocket);
-                Console.WriteLine(">>>>>>>>>>>>>22");
-            }
-            else
-            {
-                Console.WriteLine(">>>>>>>>>>>>>31");
-                onInitEnemyKick += async () => await SendSomeData(new PlayerIndex { playerId = enemyKickedId }, enemy.ClientWebSocket);
-                Console.WriteLine(">>>>>>>>>>>>>32");
-            }
+                Server.AllBattleFields[playerId] = null;
+                Server.AllBattleFields[enemyId] = null;
+                if (enemy.ClientWebSocket.State == WebSocketState.Open)
+                    await SendSomeData(new PlayerIndex { playerId = enemyKickedId }, enemy.ClientWebSocket);
+            };
+
+            if (enemy.ClientWebSocket.State == WebSocketState.Open && enemy.isReadyReciveKick)
+                enemy.onInitEnemyReadyKick?.Invoke();
         }
-        kickedFlag = true;
+        else
+        {
+            Server.AllBattleFields[playerId] = null;
+            if (enemyId != -1)
+                Server.AllBattleFields[enemyId] = null;
+        }
     }
 
 
@@ -344,8 +382,8 @@ class Client
     {
         Console.WriteLine(">>>>>>>>>> sending bot");
         Console.WriteLine(Server.waiterId);
-
-        await SendSomeData(new PlayerIndex() { playerId = botId }, Server.AllCients[Server.waiterId].ClientWebSocket);
+        if (Server.AllCients[Server.waiterId].ClientWebSocket.State == WebSocketState.Open)
+            await SendSomeData(new PlayerIndex() { playerId = botId }, Server.AllCients[Server.waiterId].ClientWebSocket);
         RemovePlayer(Server.waiterId);
 
         Server.waitingTimer.Stop();
@@ -358,13 +396,11 @@ class Client
     private async Task GetClickedCell(string cellInfo)
     {
         Console.WriteLine(">>>>>>>>>>>> got celldata" + playerId);
-        // lastActionTimer.Stop();
-
         Console.WriteLine(cellInfo);
         CellData? returnedCellData = JsonSerializer.Deserialize<CellData>(cellInfo);
 
         IsGot cellResponse = new IsGot();
-        States[][] enemyField = Server.AllCients[enemyId].fieldMatrix;
+        States[][] enemyField = Server.AllBattleFields[enemyId];
 
 
         if (enemyField[returnedCellData.y][returnedCellData.x] == States.ship)
@@ -386,7 +422,22 @@ class Client
             enemyField[returnedCellData.y][returnedCellData.x] = States.missed;
         }
 
-        await SendSomeData(cellResponse, ClientWebSocket);
+
+        if (!isReadyReciveKick)
+        {
+            isReadyReciveKick = true;
+            onInitEnemyReadyKick?.Invoke();
+
+            if (Server.AllCients[enemyId] == null)
+                return;
+        }
+
+        if (Server.AllCients[enemyId] != null)
+            Server.AllCients[enemyId].isReadyReciveKick = false;
+
+
+        if (ClientWebSocket.State == WebSocketState.Open)
+            await SendSomeData(cellResponse, ClientWebSocket);
         if (Server.AllCients[enemyId] != null && Server.AllCients[enemyId].ClientWebSocket.State == WebSocketState.Open)
             await SendSomeData(returnedCellData, Server.AllCients[enemyId].ClientWebSocket);
     }

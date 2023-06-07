@@ -25,6 +25,7 @@ class Server
 
     public static List<int> allSutableIdes = new List<int>(0);
     public static Client[] AllCients = new Client[0];
+    public static Client.States[][][] AllBattleFields = new Client.States[0][][];
 
 
     public static System.Timers.Timer waitingTimer = new System.Timers.Timer(maxWaitingtime);
@@ -55,6 +56,8 @@ class Server
         waitingTimer.Elapsed += async (Object source, ElapsedEventArgs e) => await Client.SendBot();
 
         AllCients = new Client[maxClients];
+        AllBattleFields = new Client.States[maxClients][][];
+
         allSutableIdes = new List<int>(maxClients);
         for (int i = 0; i < maxClients; i++)
             allSutableIdes.Add(i);
