@@ -385,10 +385,15 @@ class Client
     {
         Console.WriteLine(">>>>>>>>>> sending bot");
         Console.WriteLine(Server.waiterId);
+
         if (Server.AllCients[Server.waiterId].ClientWebSocket.State == WebSocketState.Open)
             await SendSomeData(new PlayerIndex() { playerId = botId }, Server.AllCients[Server.waiterId].ClientWebSocket);
-        RemovePlayer(Server.waiterId);
 
+        
+        for (int i = 0; i < eventDelegates.Count; i++)
+                newClientConnected -= eventDelegates[i];
+        RemovePlayer(Server.waiterId);
+        
         Server.waitingTimer.Stop();
         Server.waiterId = -1;
     }
