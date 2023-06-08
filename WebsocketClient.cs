@@ -66,7 +66,7 @@ class Client
 
             // if (resivedDataString != "")
             //     Console.WriteLine(resivedDataString);
-            // Thread.Sleep(2000);
+            Thread.Sleep(200);
 
 
             if (resivedDataString != "")
@@ -174,7 +174,7 @@ class Client
             await SendSomeData(new PlayerIndex { playerId = playerId }, ClientWebSocket);
         enemyId = -1;
 
-        Console.WriteLine(playerId);
+        // Console.WriteLine(playerId);
         Server.AllCients[playerId] = this;
 
         Server.AllBattleFields[playerId] = new States[fieldWidth][];
