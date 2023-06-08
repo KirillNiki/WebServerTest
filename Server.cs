@@ -76,7 +76,7 @@ class Server
         }
         else
         {
-            Console.WriteLine("Server was started");
+            // Console.WriteLine("Server was started");
         }
     }
 
@@ -91,7 +91,7 @@ class Server
                 var request = httpListener.GetContext();
                 if (request.Request.IsWebSocketRequest)
                 {
-                    Console.WriteLine(">>>>>>>>>>> webSocket connected");
+                    // Console.WriteLine(">>>>>>>>>>> webSocket connected");
                     HttpListenerWebSocketContext webSocketContext = await request.AcceptWebSocketAsync(null);
                     WebSocket webSocket = webSocketContext.WebSocket;
 
@@ -100,7 +100,7 @@ class Server
                 }
                 else
                 {
-                    Console.WriteLine(">>>>>>>>>>> page was sent");
+                    // Console.WriteLine(">>>>>>>>>>> page was sent");
                     new GetWebPage(httpListener, request);
                 }
             }

@@ -100,7 +100,7 @@ class GetWebPage
         }
         catch (Exception ex)
         {
-            Console.WriteLine($"Exception: {ex}/nMessage: {ex.Message}");
+            // Console.WriteLine($"Exception: {ex}/nMessage: {ex.Message}");
         }
     }
 
