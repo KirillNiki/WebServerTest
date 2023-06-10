@@ -49,14 +49,28 @@ div {
     position: absolute;
 }
 
-#start {
+#importantButs {
+    position: relative;
+    margin-left: 58.5%;
+    margin-top: 2%;
+}
+
+.importantBut {
     border-radius: 100%;
     background-color: aqua;
     width: 5%;
-    margin-left: 58.5%;
-    margin-top: 2%;
-    position: relative;
     border: 0px;
+    margin-top: 2%;
+    position: absolute;
+}
+
+#start {
+    margin-left: 2%;
+}
+
+#buttonInstall {
+    margin-left: 6%;
+    visibility: hidden;
 }
 
 #darker {

@@ -152,32 +152,41 @@ function Resize() {
         AllWarShips[i].style.height = width + `px`;
     }
 
-    let startButoon = document.getElementById(`start`);
-    startButoon.style.height = startButoon.clientWidth + `px`;
-
-
+    
     for (let i = 0; i < AllWarShips.length; i++) {
         if (AllWarShips[i].rotation === 90) {
             const delta = AllWarShips[i].height / 2;
             AllWarShips[i].style.transformOrigin = `${delta}px ${delta}px`;
         }
     }
-
+    
     for (let i = 0; i < EnemyShips.length; i++) {
         EnemyShips[i].style.width = (width * EnemyShips[i].length) + `px`;
         EnemyShips[i].style.height = width + `px`;
     }
-
+    
     for (let i = 0; i < EnemyShips.length; i++) {
         if (EnemyShips[i].rotation === 90) {
             const delta = EnemyShips[i].height / 2;
             EnemyShips[i].style.transformOrigin = `${delta}px ${delta}px`;
         }
     }
-
+    
     var darker = document.getElementById(`darker`);
     darker.style.height = document.documentElement.scrollHeight + `px`;
     darker.style.width = document.documentElement.scrollWidth + `px`;
+    
+    var importantButtons = document.getElementById('importantButs');
+    importantButtons.style.width = (window.innerWidth / 10) + `px`;
+    importantButtons.style.height = importantButtons.clientWidth + `px`;
+    
+    
+    let startButoon = document.getElementById(`start`);
+    startButoon.style.height = startButoon.clientWidth + `px`;
+
+    let installButoon = document.getElementById(`buttonInstall`);
+    installButoon.style.height = installButoon.clientWidth + `px`;
+    
 
     var strLength = AllWarShips[0].style.height.length;
     var str = AllWarShips[0].style.height.substring(0, strLength - 2);

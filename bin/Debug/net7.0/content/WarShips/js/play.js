@@ -25,12 +25,13 @@ let InatciveTimer;
 async function StartGame() {
     let AllButtons = document.getElementsByClassName(`button`);
 
-    if (isBotPlay) {
+    if (!navigator.onLine) {
+        isBotPlay = true;
         EnemyesFieldInit();
         ShowYourTurn();
     }
     else {
-        webSocket = new WebSocket(`ws://${domain}/`);
+        webSocket = new WebSocket(`wss://${domain}/`);
 
         const waitForConnection = new Promise(async function (resolve, reject) {
             var done = await GetPlayerId();
