@@ -51,10 +51,14 @@ class Server
         Console.WriteLine(ip);
         maxClients = maxClientsCount;
 
-        this.httpListener = new HttpListener();
-        this.httpListener.Prefixes.Add($"http://{ip}/");
-        waitingTimer.Elapsed += async (Object source, ElapsedEventArgs e) => await Client.SendBot();
 
+        string[] prefixes = {$"http://*:{port}/"};  //$"http://{ip}/", 
+
+        this.httpListener = new HttpListener();
+        for (int i = 0; i < prefixes.Length; i++)
+            this.httpListener.Prefixes.Add(prefixes[i]);
+        
+        waitingTimer.Elapsed += async (Object source, ElapsedEventArgs e) => await Client.SendBot();
         AllCients = new Client[maxClients];
         AllBattleFields = new Client.States[maxClients][][];
 
@@ -89,9 +93,13 @@ class Server
             try
             {
                 var request = httpListener.GetContext();
-                if (request.Request.IsWebSocketRequest)
+                if (request.Request.IsSecureConnection)
                 {
-                    // Console.WriteLine(">>>>>>>>>>> webSocket connected");
+                    Console.WriteLine(">>>>>>>>>>> ssl connected");
+                }
+                else if (request.Request.IsWebSocketRequest)
+                {
+                    Console.WriteLine(">>>>>>>>>>> webSocket connected");
                     HttpListenerWebSocketContext webSocketContext = await request.AcceptWebSocketAsync(null);
                     WebSocket webSocket = webSocketContext.WebSocket;
 
@@ -100,7 +108,7 @@ class Server
                 }
                 else
                 {
-                    // Console.WriteLine(">>>>>>>>>>> page was sent");
+                    Console.WriteLine(">>>>>>>>>>> page was sent");
                     new GetWebPage(httpListener, request);
                 }
             }

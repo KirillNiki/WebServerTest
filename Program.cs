@@ -12,6 +12,7 @@ class Connection
 {
     private static Server? server;
     private static int port = 9000;
+    private static int sslPort = 8443;
     private static int maxClients = 10;
 
 

@@ -11,7 +11,7 @@ class GetWebPage
     private HttpListenerResponse response;
     private Stream output;
 
-
+    static string rootPath = "content/WarShips/";
 
     public GetWebPage(HttpListener httpListener, HttpListenerContext context)
     {
@@ -26,7 +26,7 @@ class GetWebPage
 
 
         Headers = Parse(request);
-        // Console.WriteLine($"[{context.Request.RemoteEndPoint}]\nReal path: {Headers.RealPath}\nFile: {Headers.File}\nDate: {DateTime.Now}");
+        Console.WriteLine($"[{context.Request.RemoteEndPoint}]\nReal path: {Headers.RealPath}\nFile: {Headers.File}\nDate: {DateTime.Now}");
 
         if (Headers.RealPath.IndexOf("..") != -1)
         {
@@ -34,6 +34,8 @@ class GetWebPage
             return;
         }
 
+        
+        Console.WriteLine(Headers.RealPath);
         if (File.Exists(Headers.RealPath))
             GetSheet();
         else
@@ -57,7 +59,8 @@ class GetWebPage
         int slashIndex = tempRequest.IndexOf('/');
 
         result.File = tempRequest.Substring(slashIndex + 1);
-        result.RealPath = $"{AppDomain.CurrentDomain.BaseDirectory}{result.File}";
+        if (result.File == "") result.File = "index.html";
+        result.RealPath = $"{AppDomain.CurrentDomain.BaseDirectory}{rootPath}{result.File}";
         return result;
     }
 
