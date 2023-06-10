@@ -34,7 +34,7 @@ class GetWebPage
             return;
         }
 
-        
+
         Console.WriteLine(Headers.RealPath);
         if (File.Exists(Headers.RealPath))
             GetSheet();
@@ -59,7 +59,12 @@ class GetWebPage
         int slashIndex = tempRequest.IndexOf('/');
 
         result.File = tempRequest.Substring(slashIndex + 1);
-        if (result.File == "") result.File = "index.html";
+        
+        if (result.File == "")
+            result.File = "index.html";
+        else if (result.File == "sw.js")
+            result.File = "js/sw.js";
+
         result.RealPath = $"{AppDomain.CurrentDomain.BaseDirectory}{rootPath}{result.File}";
         return result;
     }
@@ -93,7 +98,7 @@ class GetWebPage
             fs.Close();
 
             response.ContentType = contentType;
-            response.StatusCode = (int) HttpStatusCode.OK;
+            response.StatusCode = (int)HttpStatusCode.OK;
             response.ContentLength64 = data.Length;
             // Console.WriteLine(contentType);
 
