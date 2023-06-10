@@ -51,25 +51,25 @@ div {
 
 #importantButs {
     position: relative;
-    margin-left: 58.5%;
+    margin-left: 56%;
     margin-top: 2%;
 }
 
 .importantBut {
     border-radius: 100%;
     background-color: aqua;
-    width: 5%;
+    width: 40%;
     border: 0px;
-    margin-top: 2%;
+    /* margin-top: 0%; */
     position: absolute;
 }
 
 #start {
-    margin-left: 2%;
+    margin-left: 5%;
 }
 
 #buttonInstall {
-    margin-left: 6%;
+    margin-left: 55%;
     visibility: hidden;
 }
 

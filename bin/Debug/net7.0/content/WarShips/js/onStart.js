@@ -178,7 +178,7 @@ function Resize() {
     
     var importantButtons = document.getElementById('importantButs');
     importantButtons.style.width = (window.innerWidth / 10) + `px`;
-    importantButtons.style.height = importantButtons.clientWidth + `px`;
+    importantButtons.style.height = (importantButtons.clientWidth / 2) + `px`;
     
     
     let startButoon = document.getElementById(`start`);
