@@ -1,0 +1,1 @@
+ssh entcor@192.168.2.81 "cd && cd server/WebServerTest && dotnet run"

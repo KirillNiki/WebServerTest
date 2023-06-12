@@ -1,7 +1,13 @@
-table {
+#myField,
+#enemyField {
     width: 45%;
+    position: absolute;
+}
+
+table {
     border-collapse: collapse;
-    position: relative;
+    width: 100%;
+    height: 100%;
 }
 
 td {
@@ -120,4 +126,50 @@ p {
     height: 0px;
     width: 0px;
     z-index: 10;
+}
+
+.cellText {
+    width: 20%;
+    height: 60%;
+    margin-left: 40%;
+    margin-top: 20%;
+    font-size: 90%;
+}
+
+main {
+    width: 100%;
+    height: 100%;
+    position: relative;
+}
+
+
+.flexContainer {
+    display: flex;
+    flex-direction: column;
+}
+
+.flexItem {
+    flex: 1;
+}
+
+
+@media all and (min-width: 480px) {
+
+    .flexContainer--sm {
+        flex-direction: column;
+    }
+}
+
+@media all and (min-width: 720px) {
+
+    .flexContainer--md {
+        flex-direction: column;
+    }
+}
+
+@media all and (min-width: 960px) {
+
+    .flexContainer--lg {
+        flex-direction: column;
+    }
 }

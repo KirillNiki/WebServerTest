@@ -22,16 +22,16 @@ const tableLength = 10;
 let offset;
 let prevX = 0, prevY = 0;
 let AllShipStartPositions = [
-    { left: 10, top: 30 },
-    { left: 14, top: 30 },
-    { left: 18, top: 30 },
-    { left: 22, top: 30 },
-    { left: 10, top: 40 },
-    { left: 15, top: 40 },
-    { left: 20, top: 40 },
-    { left: 10, top: 50 },
-    { left: 18, top: 50 },
-    { left: 12, top: 60 },
+    { left: 10, top: 8 },
+    { left: 14, top: 8 },
+    { left: 18, top: 8 },
+    { left: 22, top: 8 },
+    { left: 10, top: 14 },
+    { left: 15, top: 14 },
+    { left: 20, top: 14 },
+    { left: 10, top: 20 },
+    { left: 18, top: 20 },
+    { left: 12, top: 26 },
 ];
 let shipsCount = 0;
 
@@ -56,21 +56,34 @@ for (let i = 0; i < AllTrs.length; i++) {
     if (AllTrs[i].className == `tr1`) {
         AllTrs[i].innerHTML += `<td class="borderNone"></td>`;
         for (let j = 0; j < tableLength; j++) {
-            AllTrs[i].innerHTML += `<td class="borderNone">` + letters[j] + `</td>`;
+            AllTrs[i].innerHTML += 
+            `<td class="borderNone">
+                <div class="myBlock">
+                    <p class="cellText">` + letters[j] + `</p>
+                </div>
+            </td>`;
         }
     }
     else {
-        AllTrs[i].innerHTML += `<td class="borderNone">` + AllTrs[i].id + `</td>`;
+        AllTrs[i].innerHTML += 
+        `<td class="borderNone">
+            <div class="myBlock">
+                <p class="cellText">` + AllTrs[i].id + `</p>
+            </div>
+        </td>`;
+
         for (let j = 0; j < tableLength; j++) {
 
             if (AllTrs[i].className == `enemyFieldBody`) {
-                AllTrs[i].innerHTML += `<td class="td">
-                <div class="enemyBlock" id="enemy` + (enemyY).toString() + (enemyX).toString() + `">
-                    <button class="button"></button>
-                    <img src="sprites/got.png" class="z3 toHide got">
-                    <img src="sprites/missed.png" class="z2 toHide missed">
-                </div>
-            </td>`;
+                AllTrs[i].innerHTML += `
+                <td class="td">
+                    <div class="enemyBlock" id="enemy` + (enemyY).toString() + (enemyX).toString() + `">
+                        <button class="button"></button>
+                        <img src="sprites/got.png" class="z3 toHide got">
+                        <img src="sprites/missed.png" class="z2 toHide missed">
+                    </div>
+                </td>`;
+
                 enemyX++;
                 if (enemyX === 10) {
                     enemyY++;
@@ -119,8 +132,8 @@ function ShipsInit() {
         AllWarShips[i].rotation = 0;
         AllWarShips[i].cellY = -1;
         AllWarShips[i].cellX = -1;
-        AllWarShips[i].style.left = AllShipStartPositions[i].left + `%`;
-        AllWarShips[i].style.top = AllShipStartPositions[i].top + `%`;
+        AllWarShips[i].style.marginLeft = AllShipStartPositions[i].left + `%`;
+        AllWarShips[i].style.marginTop = AllShipStartPositions[i].top + `%`;
         AllWarShips[i].addEventListener('mousedown', OnMouseDown);
     }
 }
@@ -134,17 +147,23 @@ for (let i = 0; i < AllMyCells.length; i++) {
 
 
 function Resize() {
+    document.documentElement.scrollWidth = document.documentElement.clientWidth + `px`;
+
+
+    var body = document.getElementById(`body`);
+    body.style.width = document.documentElement.scrollWidth + `px`;
+
     let mainBlock = document.getElementById(`mainBlock`);
     mainBlock.style.height = mainBlock.clientWidth / 2 + `px`;
 
-    let Fields = document.getElementsByTagName(`table`);
+    let Fields = document.getElementsByClassName(`flexItem`);
     for (let i = 0; i < Fields.length; i++) {
         let width = Fields[i].clientWidth;
         Fields[i].style.height = width + `px`;
     }
 
-    let enemyField = document.getElementById(`enemyField`);
-    enemyField.style.marginTop = -enemyField.clientHeight + `px`;
+    // let enemyField = document.getElementById(`enemyField`);
+    // enemyField.style.marginTop = -enemyField.clientHeight + `px`;
 
     let width = Fields[0].clientWidth / 11;
     for (let i = 0; i < AllWarShips.length; i++) {
@@ -152,41 +171,41 @@ function Resize() {
         AllWarShips[i].style.height = width + `px`;
     }
 
-    
+
     for (let i = 0; i < AllWarShips.length; i++) {
         if (AllWarShips[i].rotation === 90) {
             const delta = AllWarShips[i].height / 2;
             AllWarShips[i].style.transformOrigin = `${delta}px ${delta}px`;
         }
     }
-    
+
     for (let i = 0; i < EnemyShips.length; i++) {
         EnemyShips[i].style.width = (width * EnemyShips[i].length) + `px`;
         EnemyShips[i].style.height = width + `px`;
     }
-    
+
     for (let i = 0; i < EnemyShips.length; i++) {
         if (EnemyShips[i].rotation === 90) {
             const delta = EnemyShips[i].height / 2;
             EnemyShips[i].style.transformOrigin = `${delta}px ${delta}px`;
         }
     }
-    
+
     var darker = document.getElementById(`darker`);
     darker.style.height = document.documentElement.scrollHeight + `px`;
     darker.style.width = document.documentElement.scrollWidth + `px`;
-    
+
     var importantButtons = document.getElementById('importantButs');
-    importantButtons.style.width = (window.innerWidth / 10) + `px`;
+    importantButtons.style.width = (document.documentElement.scrollWidth / 10) + `px`;
     importantButtons.style.height = (importantButtons.clientWidth / 2) + `px`;
-    
-    
+
+
     let startButoon = document.getElementById(`start`);
     startButoon.style.height = startButoon.clientWidth + `px`;
 
     let installButoon = document.getElementById(`buttonInstall`);
     installButoon.style.height = installButoon.clientWidth + `px`;
-    
+
 
     var strLength = AllWarShips[0].style.height.length;
     var str = AllWarShips[0].style.height.substring(0, strLength - 2);
@@ -256,12 +275,12 @@ function OnMouseDown(event) {
 
         PutShipIntoCell(object.id);
         if (object.cellX === -1) {
-            object.style.left = AllShipStartPositions[object.id.slice(object.id.length - 1, object.id.length)].left + `%`;
-            object.style.top = AllShipStartPositions[object.id.slice(object.id.length - 1, object.id.length)].top + `%`;
+            object.style.marginLeft = AllShipStartPositions[object.id.slice(object.id.length - 1, object.id.length)].left + `%`;
+            object.style.marginTop = AllShipStartPositions[object.id.slice(object.id.length - 1, object.id.length)].top + `%`;
         }
         else {
-            object.style.left = `0px`;
-            object.style.top = `0px`;
+            object.style.marginLeft = `0px`;
+            object.style.marginTop = `0px`;
         }
     };
 
@@ -421,8 +440,8 @@ function StartEndGame(button) {
             for (let i = 0; i < AllWarShips.length; i++) {
                 AllWarShips[i].addEventListener('mousedown', OnMouseDown);
 
-                AllWarShips[i].style.left = AllShipStartPositions[AllWarShips[i].id.slice(AllWarShips[i].id.length - 1, AllWarShips[i].id.length)].left + `%`;
-                AllWarShips[i].style.top = AllShipStartPositions[AllWarShips[i].id.slice(AllWarShips[i].id.length - 1, AllWarShips[i].id.length)].top + `%`;
+                AllWarShips[i].style.marginLeft = AllShipStartPositions[AllWarShips[i].id.slice(AllWarShips[i].id.length - 1, AllWarShips[i].id.length)].left + `%`;
+                AllWarShips[i].style.marginTop = AllShipStartPositions[AllWarShips[i].id.slice(AllWarShips[i].id.length - 1, AllWarShips[i].id.length)].top + `%`;
                 AllWarShips[i].rotation = 0;
                 AllWarShips[i].style.transform = `rotate(0deg)`;
                 AllWarShips[i].cellY = -1;

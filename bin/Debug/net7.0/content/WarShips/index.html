@@ -16,7 +16,7 @@
 
 </head>
 
-<body style="background-color: rgb(12, 67, 88);">
+<body id="body" style="background-color: rgb(12, 67, 88);">
     <div id="darker">
         <p id="darkerWriter"></p>
     </div>
@@ -44,17 +44,23 @@
         <img src="sprites/threeBlockShip.png" id="threeBlockShip7" class="WarShip">
         <img src="sprites/threeBlockShip.png" id="threeBlockShip8" class="WarShip">
         <img src="sprites/fourBlockShip.png" id="fourBlockShip9" class="WarShip">
-        <div id="mainBlock"
+        <div id="mainBlock" class="flexContainer flexContainer--sm flexContainer--md flexContainer--lg"
             style="background-color:aqua;width: 60%;margin-left: 30%;margin-top: 60px;border-radius: 10%;position: relative;">
-            <table id="myField" style="margin-left: 3%;">
-                <tbody id="myFieldBody">
-                </tbody>
-            </table>
 
-            <table id="enemyField" style="margin-left: 51%;">
-                <tbody id="enemyFieldBody">
-                </tbody>
-            </table>
+            <div id="myField" style="margin-left: 3%;" class="flexItem">
+                <table>
+                    <tbody id="myFieldBody">
+                    </tbody>
+                </table>
+            </div>
+
+            <div id="enemyField" style="margin-left: 51%;" class="flexItem">
+                <table>
+                    <tbody id="enemyFieldBody">
+                    </tbody>
+                </table>
+            </div>
+
         </div>
 
         <div id="importantButs">

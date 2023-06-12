@@ -26,11 +26,13 @@ class GetWebPage
 
 
         Headers = Parse(request);
+        Console.WriteLine(request);
         Console.WriteLine($"[{context.Request.RemoteEndPoint}]\nReal path: {Headers.RealPath}\nFile: {Headers.File}\nDate: {DateTime.Now}");
 
         if (Headers.RealPath.IndexOf("..") != -1)
         {
             SendError(404);
+            Console.WriteLine(">>>>>>>>>>>>>>>>>>1");
             return;
         }
 
@@ -39,7 +41,10 @@ class GetWebPage
         if (File.Exists(Headers.RealPath))
             GetSheet();
         else
+        {
             SendError(404);
+            Console.WriteLine(">>>>>>>>>>>>>>>>>>2");
+        }
     }
 
 
@@ -59,11 +64,13 @@ class GetWebPage
         int slashIndex = tempRequest.IndexOf('/');
 
         result.File = tempRequest.Substring(slashIndex + 1);
-        
-        if (result.File == "")
+
+        if (result.File == "" || result.File == "ships.entcor.app")
             result.File = "index.html";
         else if (result.File == "sw.js")
             result.File = "js/sw.js";
+
+        
 
         result.RealPath = $"{AppDomain.CurrentDomain.BaseDirectory}{rootPath}{result.File}";
         return result;
