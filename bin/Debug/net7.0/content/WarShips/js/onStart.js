@@ -56,8 +56,8 @@ for (let i = 0; i < AllTrs.length; i++) {
     if (AllTrs[i].className == `tr1`) {
         AllTrs[i].innerHTML += `<td class="borderNone"></td>`;
         for (let j = 0; j < tableLength; j++) {
-            AllTrs[i].innerHTML += 
-            `<td class="borderNone">
+            AllTrs[i].innerHTML +=
+                `<td class="borderNone">
                 <div class="myBlock">
                     <p class="cellText">` + letters[j] + `</p>
                 </div>
@@ -65,8 +65,8 @@ for (let i = 0; i < AllTrs.length; i++) {
         }
     }
     else {
-        AllTrs[i].innerHTML += 
-        `<td class="borderNone">
+        AllTrs[i].innerHTML +=
+            `<td class="borderNone">
             <div class="myBlock">
                 <p class="cellText">` + AllTrs[i].id + `</p>
             </div>
@@ -132,8 +132,8 @@ function ShipsInit() {
         AllWarShips[i].rotation = 0;
         AllWarShips[i].cellY = -1;
         AllWarShips[i].cellX = -1;
-        AllWarShips[i].style.marginLeft = AllShipStartPositions[i].left + `%`;
-        AllWarShips[i].style.marginTop = AllShipStartPositions[i].top + `%`;
+        AllWarShips[i].style.left = AllShipStartPositions[i].left + `%`;
+        AllWarShips[i].style.top = AllShipStartPositions[i].top + `%`;
         AllWarShips[i].addEventListener('mousedown', OnMouseDown);
     }
 }
@@ -147,7 +147,7 @@ for (let i = 0; i < AllMyCells.length; i++) {
 
 
 function Resize() {
-    document.documentElement.scrollWidth = document.documentElement.clientWidth + `px`;
+    // document.documentElement.scrollWidth = document.documentElement.clientWidth + `px`;
 
 
     var body = document.getElementById(`body`);
@@ -156,7 +156,7 @@ function Resize() {
     let mainBlock = document.getElementById(`mainBlock`);
     mainBlock.style.height = mainBlock.clientWidth / 2 + `px`;
 
-    let Fields = document.getElementsByClassName(`flexItem`);
+    let Field = document.getElementById(`myFieldBody`);
     for (let i = 0; i < Fields.length; i++) {
         let width = Fields[i].clientWidth;
         Fields[i].style.height = width + `px`;
@@ -165,7 +165,7 @@ function Resize() {
     // let enemyField = document.getElementById(`enemyField`);
     // enemyField.style.marginTop = -enemyField.clientHeight + `px`;
 
-    let width = Fields[0].clientWidth / 11;
+    let width = Field.clientWidth / 11;
     for (let i = 0; i < AllWarShips.length; i++) {
         AllWarShips[i].style.width = (width * AllWarShips[i].length) + `px`;
         AllWarShips[i].style.height = width + `px`;
@@ -235,13 +235,16 @@ function OnMouseDown(event) {
         object.cellY = -1;
         shipsCount--;
     }
-    let left = getCoords(object).left;
-    let top = getCoords(object).top;
+    // let left = getCoords(object).left;
+    // let top = getCoords(object).top;
+
+    // console.log('....', left, top);
+
     let main = document.getElementById(`main`);
     main.appendChild(object);
 
-    object.style.left = left + `px`;
-    object.style.top = top + `px`;
+    // object.style.left = left + `px`;
+    // object.style.top = top + `px`;
 
     prevX = event.pageX - object.offsetLeft;
     prevY = event.pageY - object.offsetTop;
@@ -275,12 +278,12 @@ function OnMouseDown(event) {
 
         PutShipIntoCell(object.id);
         if (object.cellX === -1) {
-            object.style.marginLeft = AllShipStartPositions[object.id.slice(object.id.length - 1, object.id.length)].left + `%`;
-            object.style.marginTop = AllShipStartPositions[object.id.slice(object.id.length - 1, object.id.length)].top + `%`;
+            object.style.left = AllShipStartPositions[object.id.slice(object.id.length - 1, object.id.length)].left + `%`;
+            object.style.top = AllShipStartPositions[object.id.slice(object.id.length - 1, object.id.length)].top + `%`;
         }
         else {
-            object.style.marginLeft = `0px`;
-            object.style.marginTop = `0px`;
+            object.style.left = `0px`;
+            object.style.top = `0px`;
         }
     };
 
@@ -289,6 +292,7 @@ function OnMouseDown(event) {
     };
 
     function Move(event) {
+        console.log(event, prevX, prevY)
         object.style.left = event.pageX - prevX + `px`;
         object.style.top = event.pageY - prevY + `px`;
     }
@@ -440,8 +444,8 @@ function StartEndGame(button) {
             for (let i = 0; i < AllWarShips.length; i++) {
                 AllWarShips[i].addEventListener('mousedown', OnMouseDown);
 
-                AllWarShips[i].style.marginLeft = AllShipStartPositions[AllWarShips[i].id.slice(AllWarShips[i].id.length - 1, AllWarShips[i].id.length)].left + `%`;
-                AllWarShips[i].style.marginTop = AllShipStartPositions[AllWarShips[i].id.slice(AllWarShips[i].id.length - 1, AllWarShips[i].id.length)].top + `%`;
+                AllWarShips[i].style.left = AllShipStartPositions[AllWarShips[i].id.slice(AllWarShips[i].id.length - 1, AllWarShips[i].id.length)].left + `%`;
+                AllWarShips[i].style.top = AllShipStartPositions[AllWarShips[i].id.slice(AllWarShips[i].id.length - 1, AllWarShips[i].id.length)].top + `%`;
                 AllWarShips[i].rotation = 0;
                 AllWarShips[i].style.transform = `rotate(0deg)`;
                 AllWarShips[i].cellY = -1;

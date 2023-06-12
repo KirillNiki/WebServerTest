@@ -1,13 +1,16 @@
 #myField,
 #enemyField {
-    width: 45%;
-    position: absolute;
+    width: 100%;
+    height: 100%;
 }
 
 table {
+    /* position: absolute; */
     border-collapse: collapse;
-    width: 100%;
-    height: 100%;
+    margin-left: 5%;
+    margin-top: 5%;
+    width: 90%;
+    height: 90%;
 }
 
 td {
@@ -123,8 +126,8 @@ p {
 }
 
 .WarShip {
-    height: 0px;
-    width: 0px;
+    /* height: 0px;
+    width: 0px; */
     z-index: 10;
 }
 
@@ -149,7 +152,7 @@ main {
 }
 
 .flexItem {
-    flex: 1;
+    /* flex: 1; */
 }
 
 
