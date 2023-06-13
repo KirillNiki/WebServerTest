@@ -21,7 +21,9 @@ function InitMatrix() {
 const tableLength = 10;
 let offset;
 let prevX = 0, prevY = 0;
-let AllShipStartPositions = [
+
+let AllShipStartPositions;
+let AllShipStartPositionsLandscape = [
     { left: 16, top: 10 },
     { left: 36, top: 10 },
     { left: 56, top: 10 },
@@ -32,6 +34,18 @@ let AllShipStartPositions = [
     { left: 11, top: 50 },
     { left: 56, top: 50 },
     { left: 26, top: 70 },
+];
+let AllShipStartPositionsPortrait = [
+    { left: 20, top: 10 },
+    { left: 60, top: 10 },
+    { left: 20, top: 20 },
+    { left: 60, top: 20 },
+    { left: 30, top: 30 },
+    { left: 5, top: 40 },
+    { left: 55, top: 40 },
+    { left: 20, top: 50 },
+    { left: 20, top: 60 },
+    { left: 5, top: 70 },
 ];
 let shipsCount = 0;
 
@@ -132,6 +146,13 @@ function ShipsInit() {
         AllWarShips[i].rotation = 0;
         AllWarShips[i].cellY = -1;
         AllWarShips[i].cellX = -1;
+
+        var flexContainer = document.getElementById(`flexContainer`);
+        if (getComputedStyle(flexContainer).getPropertyValue(`--flex-orientation`) === `0`)
+            AllShipStartPositions = AllShipStartPositionsLandscape;
+        else if (getComputedStyle(flexContainer).getPropertyValue(`--flex-orientation`) === `1`)
+            AllShipStartPositions = AllShipStartPositionsPortrait;
+
         AllWarShips[i].style.left = AllShipStartPositions[i].left + `%`;
         AllWarShips[i].style.top = AllShipStartPositions[i].top + `%`;
         AllWarShips[i].addEventListener('mousedown', OnMouseDown);
