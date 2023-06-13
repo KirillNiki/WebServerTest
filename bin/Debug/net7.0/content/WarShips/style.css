@@ -1,4 +1,4 @@
-:root{
+:root {
     /* 0 - row, 1 - column */
     --flex-orientation: 0;
 
@@ -14,6 +14,7 @@
 table {
     /* position: absolute; */
     border-collapse: collapse;
+    table-layout: fixed;
     margin-left: 5%;
     margin-top: 5%;
     width: 90%;
@@ -25,8 +26,8 @@ td {
 }
 
 td {
-    width: 9.1%;
-    height: 9.1%;
+    width: 9%;
+    height: 9%;
 }
 
 img {
@@ -177,7 +178,7 @@ main {
 }
 
 
-#allShipsImg{
+#allShipsImg {
     border-radius: 20%;
     background-color: rgb(12, 34, 93, 20%);
     position: absolute;

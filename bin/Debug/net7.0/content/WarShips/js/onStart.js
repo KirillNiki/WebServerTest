@@ -147,15 +147,19 @@ function ShipsInit() {
         AllWarShips[i].cellY = -1;
         AllWarShips[i].cellX = -1;
 
+
         var flexContainer = document.getElementById(`flexContainer`);
-        if (getComputedStyle(flexContainer).getPropertyValue(`--flex-orientation`) === `0`)
+        var flexOrientation = getComputedStyle(flexContainer).getPropertyValue(`--flex-orientation`).toString();
+
+        if (flexOrientation === `0` || flexOrientation === ` 0`)
             AllShipStartPositions = AllShipStartPositionsLandscape;
-        else if (getComputedStyle(flexContainer).getPropertyValue(`--flex-orientation`) === `1`)
+        else if (flexOrientation === `1` || flexOrientation === ` 1`)
             AllShipStartPositions = AllShipStartPositionsPortrait;
 
         AllWarShips[i].style.left = AllShipStartPositions[i].left + `%`;
         AllWarShips[i].style.top = AllShipStartPositions[i].top + `%`;
         AllWarShips[i].addEventListener('mousedown', OnMouseDown);
+        AllWarShips[i].addEventListener('touchstart', OnMouseDown);
     }
 }
 
@@ -174,12 +178,13 @@ function Resize() {
 
     var flexContainer = document.getElementById(`flexContainer`);
     var importantButtons = document.getElementById('importantButs');
+    var flexOrientation = getComputedStyle(flexContainer).getPropertyValue(`--flex-orientation`).toString();
 
-    if (getComputedStyle(flexContainer).getPropertyValue(`--flex-orientation`) === `0`) {
+    if (flexOrientation === `0` || flexOrientation === ` 0`) {
         flexContainer.style.height = flexContainer.clientWidth / 2 + `px`;
         importantButtons.style.width = `10%`;
     }
-    else if (getComputedStyle(flexContainer).getPropertyValue(`--flex-orientation`) === `1`) {
+    else if (flexOrientation === `1` || flexOrientation === ` 1`) {
         flexContainer.style.height = flexContainer.clientWidth * 2 + `px`;
         importantButtons.style.width = `25%`;
         importantButtons.style.marginLeft = `50%`;
@@ -276,40 +281,31 @@ function OnMouseDown(event) {
         object.cellY = -1;
         shipsCount--;
     }
-    let left = getCoords(object).left;
-    let top = getCoords(object).top;
 
-
+    var body = document.getElementsByTagName(`body`);
     let main = document.getElementById(`main`);
     main.appendChild(object);
 
-    var body = document.getElementsByTagName(`body`);
-    object.style.left = left - main.offsetLeft - body[0].offsetLeft + `px`;
-    object.style.top = top - main.offsetTop - body[0].offsetTop + `px`;
+    console.log(`${object.style.left} ${object.style.top}`);
 
 
-    prevX = event.pageX - object.offsetLeft;
-    prevY = event.pageY - object.offsetTop;
+    object.style.left = getCoords(object).left - main.offsetLeft - body[0].offsetLeft + `px`;
+    object.style.top = getCoords(object).top - main.offsetTop - body[0].offsetTop + `px`;
+
+
+    console.log(`${object.style.left} ${object.style.top}`);
 
     object.style.position = 'absolute';
     object.style.zIndex = 1000;
 
+    prevX = event.pageX - object.offsetLeft;
+    prevY = event.pageY - object.offsetTop;
+
+
     document.onmousemove = function (event) {
         Move(event);
         window.onkeydown = function (event) {
-            if (event.key === `r` || event.key === `к`) {
-                object.rotation = object.rotation === 90 ? 0 : object.rotation + 90;
-
-                let st = `rotate(` + object.rotation + `deg)`;
-                if (object.rotation === 90) {
-                    const delta = object.height / 2;
-                    object.style.transformOrigin = `${delta}px ${delta}px`;
-                }
-                object.style.transform = st;
-
-                object.cellX = -1;
-                object.cellY = -1;
-            }
+            if (event.key === `r` || event.key === `к`) RotateShip(object);
         };
     };
 
@@ -318,30 +314,59 @@ function OnMouseDown(event) {
         document.onmouseup = null;
         window.onkeydown = null;
 
-        PutShipIntoCell(object.id);
-        if (object.cellX === -1) {
-            var allShipsImg = document.getElementById(`allShipsImg`);
-            allShipsImg.appendChild(object);
-
-            object.style.left = AllShipStartPositions[object.id.slice(object.id.length - 1, object.id.length)].left + `%`;
-            object.style.top = AllShipStartPositions[object.id.slice(object.id.length - 1, object.id.length)].top + `%`;
-        }
-        else {
-            object.style.left = `0px`;
-            object.style.top = `0px`;
-        }
+        EndMoving(object);
     };
+
+
+    document.ontouchmove = function (event) {
+        Move(event);
+    }
+
 
     object.ondragstart = function () {
         return false;
     };
 
     function Move(event) {
-        console.log(event, prevX, prevY)
         object.style.left = event.pageX - prevX + `px`;
         object.style.top = event.pageY - prevY + `px`;
     }
 }
+
+
+
+function RotateShip(object) {
+    object.rotation = object.rotation === 90 ? 0 : object.rotation + 90;
+
+    let st = `rotate(` + object.rotation + `deg)`;
+    if (object.rotation === 90) {
+        const delta = object.height / 2;
+        object.style.transformOrigin = `${delta}px ${delta}px`;
+    }
+    object.style.transform = st;
+
+    object.cellX = -1;
+    object.cellY = -1;
+}
+
+
+
+function EndMoving(object) {
+    PutShipIntoCell(object.id);
+    if (object.cellX === -1) {
+        var allShipsImg = document.getElementById(`allShipsImg`);
+        allShipsImg.appendChild(object);
+
+        object.style.left = AllShipStartPositions[object.id.slice(object.id.length - 1, object.id.length)].left + `%`;
+        object.style.top = AllShipStartPositions[object.id.slice(object.id.length - 1, object.id.length)].top + `%`;
+    }
+    else {
+        object.style.left = `0px`;
+        object.style.top = `0px`;
+    }
+}
+
+
 
 
 function PutShipIntoCell(id) {
@@ -469,6 +494,7 @@ function StartEndGame(button) {
 
             for (let i = 0; i < AllWarShips.length; i++) {
                 AllWarShips[i].removeEventListener('mousedown', OnMouseDown);
+                AllWarShips[i].removeEventListener('touchstart', OnMouseDown);
                 AllWarShips[i].style.zIndex = `1`;
             }
             isButtonPressed = true;
@@ -488,6 +514,7 @@ function StartEndGame(button) {
 
             for (let i = 0; i < AllWarShips.length; i++) {
                 AllWarShips[i].addEventListener('mousedown', OnMouseDown);
+                AllWarShips[i].addEventListener('touchstart', OnMouseDown);
 
                 var allShipsImg = document.getElementById(`allShipsImg`);
                 allShipsImg.appendChild(AllWarShips[i]);
