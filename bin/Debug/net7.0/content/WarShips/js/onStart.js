@@ -22,16 +22,16 @@ const tableLength = 10;
 let offset;
 let prevX = 0, prevY = 0;
 let AllShipStartPositions = [
-    { left: 10, top: 8 },
-    { left: 14, top: 8 },
-    { left: 18, top: 8 },
-    { left: 22, top: 8 },
-    { left: 10, top: 14 },
-    { left: 15, top: 14 },
-    { left: 20, top: 14 },
-    { left: 10, top: 20 },
-    { left: 18, top: 20 },
-    { left: 12, top: 26 },
+    { left: 16, top: 10 },
+    { left: 36, top: 10 },
+    { left: 56, top: 10 },
+    { left: 76, top: 10 },
+    { left: 10, top: 30 },
+    { left: 40, top: 30 },
+    { left: 70, top: 30 },
+    { left: 11, top: 50 },
+    { left: 56, top: 50 },
+    { left: 26, top: 70 },
 ];
 let shipsCount = 0;
 
@@ -147,20 +147,44 @@ for (let i = 0; i < AllMyCells.length; i++) {
 
 
 function Resize() {
-    // document.documentElement.scrollWidth = document.documentElement.clientWidth + `px`;
-
-
     var body = document.getElementById(`body`);
-    body.style.width = document.documentElement.scrollWidth + `px`;
+    body.style.width = document.documentElement.clientWidth + `px`;
 
-    let mainBlock = document.getElementById(`mainBlock`);
-    mainBlock.style.height = mainBlock.clientWidth / 2 + `px`;
+
+    var flexContainer = document.getElementById(`flexContainer`);
+    var importantButtons = document.getElementById('importantButs');
+
+    if (getComputedStyle(flexContainer).getPropertyValue(`--flex-orientation`) === `0`) {
+        flexContainer.style.height = flexContainer.clientWidth / 2 + `px`;
+        importantButtons.style.width = `10%`;
+    }
+    else if (getComputedStyle(flexContainer).getPropertyValue(`--flex-orientation`) === `1`) {
+        flexContainer.style.height = flexContainer.clientWidth * 2 + `px`;
+        importantButtons.style.width = `25%`;
+        importantButtons.style.marginLeft = `50%`;
+    }
+    importantButtons.style.height = (importantButtons.clientWidth / 2) + `px`;
+
+
+    var allShipsImg = document.getElementById(`allShipsImg`);
+    allShipsImg.style.width = (flexContainer.clientWidth / 3) + `px`;
+    allShipsImg.style.height = flexContainer.clientHeight + `px`;
+    allShipsImg.style.marginLeft = (allShipsImg.clientWidth / 4) + `px`;
+
+
+    // if (flexContainer.style.flexDirection === `row` || flexContainer.style.WebkitFlexDirection === `row`) {
+    //     flexContainer.style.height = flexContainer.clientWidth / 2 + `px`;
+    // }
+    // else if (flexContainer.style.flexDirection === `column` || flexContainer.style.WebkitFlexDirection === `column`) {
+    //     flexContainer.style.height = flexContainer.clientWidth * 2 + `px`;
+    // }
+
 
     let Field = document.getElementById(`myFieldBody`);
-    for (let i = 0; i < Fields.length; i++) {
-        let width = Fields[i].clientWidth;
-        Fields[i].style.height = width + `px`;
-    }
+    // for (let i = 0; i < Fields.length; i++) {
+    //     let width = Fields[i].clientWidth;
+    //     Fields[i].style.height = width + `px`;
+    // }
 
     // let enemyField = document.getElementById(`enemyField`);
     // enemyField.style.marginTop = -enemyField.clientHeight + `px`;
@@ -195,10 +219,6 @@ function Resize() {
     darker.style.height = document.documentElement.scrollHeight + `px`;
     darker.style.width = document.documentElement.scrollWidth + `px`;
 
-    var importantButtons = document.getElementById('importantButs');
-    importantButtons.style.width = (document.documentElement.scrollWidth / 10) + `px`;
-    importantButtons.style.height = (importantButtons.clientWidth / 2) + `px`;
-
 
     let startButoon = document.getElementById(`start`);
     startButoon.style.height = startButoon.clientWidth + `px`;
@@ -210,7 +230,7 @@ function Resize() {
     var strLength = AllWarShips[0].style.height.length;
     var str = AllWarShips[0].style.height.substring(0, strLength - 2);
     var temp = parseFloat(str);
-    offset = Math.floor(temp / 5);
+    offset = Math.floor(temp / 3);
 
     var turn = document.getElementById(`turn`);
     turn.style.width = (width * 8) + `px`;
@@ -235,16 +255,17 @@ function OnMouseDown(event) {
         object.cellY = -1;
         shipsCount--;
     }
-    // let left = getCoords(object).left;
-    // let top = getCoords(object).top;
+    let left = getCoords(object).left;
+    let top = getCoords(object).top;
 
-    // console.log('....', left, top);
 
     let main = document.getElementById(`main`);
     main.appendChild(object);
 
-    // object.style.left = left + `px`;
-    // object.style.top = top + `px`;
+    var body = document.getElementsByTagName(`body`);
+    object.style.left = left - main.offsetLeft - body[0].offsetLeft + `px`;
+    object.style.top = top - main.offsetTop - body[0].offsetTop + `px`;
+
 
     prevX = event.pageX - object.offsetLeft;
     prevY = event.pageY - object.offsetTop;
@@ -278,6 +299,9 @@ function OnMouseDown(event) {
 
         PutShipIntoCell(object.id);
         if (object.cellX === -1) {
+            var allShipsImg = document.getElementById(`allShipsImg`);
+            allShipsImg.appendChild(object);
+
             object.style.left = AllShipStartPositions[object.id.slice(object.id.length - 1, object.id.length)].left + `%`;
             object.style.top = AllShipStartPositions[object.id.slice(object.id.length - 1, object.id.length)].top + `%`;
         }
@@ -444,6 +468,9 @@ function StartEndGame(button) {
             for (let i = 0; i < AllWarShips.length; i++) {
                 AllWarShips[i].addEventListener('mousedown', OnMouseDown);
 
+                var allShipsImg = document.getElementById(`allShipsImg`);
+                allShipsImg.appendChild(AllWarShips[i]);
+
                 AllWarShips[i].style.left = AllShipStartPositions[AllWarShips[i].id.slice(AllWarShips[i].id.length - 1, AllWarShips[i].id.length)].left + `%`;
                 AllWarShips[i].style.top = AllShipStartPositions[AllWarShips[i].id.slice(AllWarShips[i].id.length - 1, AllWarShips[i].id.length)].top + `%`;
                 AllWarShips[i].rotation = 0;
@@ -451,7 +478,6 @@ function StartEndGame(button) {
                 AllWarShips[i].cellY = -1;
                 AllWarShips[i].cellX = -1;
                 AllWarShips[i].style.zIndex = `1000`;
-                main.appendChild(AllWarShips[i]);
             }
 
             for (let i = 0; i < EnemyShips.length; i++) {
