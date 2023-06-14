@@ -316,7 +316,7 @@ function OnMouseDown(event) {
         EndMoving(object);
     };
 
-    document.ontouchend = function (event) {
+    document.ontouchend = function () {
         document.ontouchmove = null;
         document.ontouchend = null;
         EndMoving(object);
