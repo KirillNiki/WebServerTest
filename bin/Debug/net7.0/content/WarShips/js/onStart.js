@@ -106,7 +106,7 @@ for (let i = 0; i < AllTrs.length; i++) {
             }
             else {
                 AllTrs[i].innerHTML += `<td class="td">
-                <div class="myBlock" id="` + (i - 1).toString() + (j).toString() + `">
+                <div class="myCell myBlock" id="` + (i - 1).toString() + (j).toString() + `">
                     <img src="sprites/got.png" class="z3 toHide got">
                     <img src="sprites/missed.png" class="z2 toHide missed">
                 </div>
@@ -164,7 +164,7 @@ function ShipsInit() {
     }
 }
 
-let AllMyCells = document.getElementsByClassName(`myBlock`);
+let AllMyCells = document.getElementsByClassName(`myCell`);
 for (let i = 0; i < AllMyCells.length; i++) {
     AllMyCells[i].y = i % tableLength;
     AllMyCells[i].x = (i - AllMyCells[i].y) / tableLength;
@@ -199,23 +199,7 @@ function Resize() {
     allShipsImg.style.marginLeft = (allShipsImg.clientWidth / 4) + `px`;
 
 
-    // if (flexContainer.style.flexDirection === `row` || flexContainer.style.WebkitFlexDirection === `row`) {
-    //     flexContainer.style.height = flexContainer.clientWidth / 2 + `px`;
-    // }
-    // else if (flexContainer.style.flexDirection === `column` || flexContainer.style.WebkitFlexDirection === `column`) {
-    //     flexContainer.style.height = flexContainer.clientWidth * 2 + `px`;
-    // }
-
-
     let Field = document.getElementById(`myFieldBody`);
-    // for (let i = 0; i < Fields.length; i++) {
-    //     let width = Fields[i].clientWidth;
-    //     Fields[i].style.height = width + `px`;
-    // }
-
-    // let enemyField = document.getElementById(`enemyField`);
-    // enemyField.style.marginTop = -enemyField.clientHeight + `px`;
-
     let width = Field.clientWidth / 11; ``
     for (let i = 0; i < AllWarShips.length; i++) {
         AllWarShips[i].style.width = (width * AllWarShips[i].length) + `px`;
@@ -385,19 +369,18 @@ function EndMoving(object) {
 
 function PutShipIntoCell(id) {
     let object = document.getElementById(id);
-    let AllCells = document.getElementsByClassName(`myBlock`);
     let isPuted = false;
 
-    for (let i = 0; i < AllCells.length; i++) {
-        var offsetLeft = getCoords(AllCells[i]).left;
-        var offsetTop = getCoords(AllCells[i]).top;
+    for (let i = 0; i < AllMyCells.length; i++) {
+        var offsetLeft = getCoords(AllMyCells[i]).left;
+        var offsetTop = getCoords(AllMyCells[i]).top;
 
         if (Math.abs(parseInt(getCoords(object).left) - parseInt(offsetLeft)) <= offset &&
             Math.abs(parseInt(getCoords(object).top) - parseInt(offsetTop)) <= offset) {
 
-            for (let j = 0; j < AllCells.length; j++) {
-                var endoffsetLeft = getCoords(AllCells[j]).left;
-                var endoffsetTop = getCoords(AllCells[j]).top;
+            for (let j = 0; j < AllMyCells.length; j++) {
+                var endoffsetLeft = getCoords(AllMyCells[j]).left;
+                var endoffsetTop = getCoords(AllMyCells[j]).top;
                 var endShipTop = object.width / object.length * (object.length - 1) + object.offsetTop;
                 var endShipLeft = object.width / object.length * (object.length - 1) + object.offsetLeft;
 
@@ -412,15 +395,15 @@ function PutShipIntoCell(id) {
                         xLenToAdd = object.length - 1;
                     }
 
-                    if ((MyFieldMatrix[AllCells[i].x][AllCells[i].y] !== States.busy && MyFieldMatrix[AllCells[i].x][AllCells[i].y] !== States.ship) &&
-                        (MyFieldMatrix[AllCells[i].x + xLenToAdd][AllCells[i].y + yLenToAdd] !== States.busy && MyFieldMatrix[AllCells[i].x + xLenToAdd][AllCells[i].y + yLenToAdd] !== States.ship)) {
+                    if ((MyFieldMatrix[AllMyCells[i].x][AllMyCells[i].y] !== States.busy && MyFieldMatrix[AllMyCells[i].x][AllMyCells[i].y] !== States.ship) &&
+                        (MyFieldMatrix[AllMyCells[i].x + xLenToAdd][AllMyCells[i].y + yLenToAdd] !== States.busy && MyFieldMatrix[AllMyCells[i].x + xLenToAdd][AllMyCells[i].y + yLenToAdd] !== States.ship)) {
 
-                        AllCells[i].appendChild(object);
+                        AllMyCells[i].appendChild(object);
                         object.style.left = `0px`;
                         object.style.top = `0px`;
 
-                        object.cellX = AllCells[i].x;
-                        object.cellY = AllCells[i].y;
+                        object.cellX = AllMyCells[i].x;
+                        object.cellY = AllMyCells[i].y;
                         ShipAndMatrix(object, States.busy);
                         shipsCount++;
                         isPuted = true;
