@@ -146,6 +146,7 @@ function ShipsInit() {
         AllWarShips[i].rotation = 0;
         AllWarShips[i].cellY = -1;
         AllWarShips[i].cellX = -1;
+        AllWarShips[i].inTrigger = false;
 
 
         var flexContainer = document.getElementById(`flexContainer`);
@@ -183,12 +184,12 @@ function Resize() {
 
     if (flexOrientation === `0` || flexOrientation === ` 0`) {
         flexContainer.style.height = flexContainer.clientWidth / 2 + `px`;
-        importantButtons.style.width = `10%`;
+        importantButtons.style.width = `15%`;
     }
     else if (flexOrientation === `1` || flexOrientation === ` 1`) {
         flexContainer.style.height = flexContainer.clientWidth * 2 + `px`;
-        importantButtons.style.width = `25%`;
-        importantButtons.style.marginLeft = `50%`;
+        importantButtons.style.width = `40%`;
+        importantButtons.style.marginLeft = `42%`;
     }
     importantButtons.style.height = (importantButtons.clientWidth / 2) + `px`;
 
@@ -236,6 +237,9 @@ function Resize() {
 
     let installButoon = document.getElementById(`buttonInstall`);
     installButoon.style.height = installButoon.clientWidth + `px`;
+
+    let rotateTrigger = document.getElementById(`rotateTrigger`);
+    rotateTrigger.style.height = rotateTrigger.clientWidth + `px`;
 
 
     var strLength = AllWarShips[0].style.height.length;
@@ -295,6 +299,7 @@ function OnMouseDown(event) {
         window.onkeydown = function (event) {
             if (event.key === `r` || event.key === `к`) RotateShip(object);
         };
+        TriggerRotation(object);
     };
 
 
@@ -303,6 +308,7 @@ function OnMouseDown(event) {
             var touch = event.targetTouches[0];
 
             Move(object, touch);
+            TriggerRotation(object);
         }
     }
 
@@ -337,6 +343,27 @@ function SetPreventDefault(event) { event.preventDefault(); }
 function Move(object, event) {
     object.style.left = event.pageX - prevX + `px`;
     object.style.top = event.pageY - prevY + `px`;
+}
+
+function TriggerRotation(object) {
+    var rotateTrigger = document.getElementById(`rotateTrigger`);
+    var rotateTriggerRect = rotateTrigger.getBoundingClientRect();
+
+    var objectRect = object.getBoundingClientRect();
+    var top = (objectRect.bottom - objectRect.top) / 2 + objectRect.top;
+    var left = (objectRect.right - objectRect.left) / 2 + objectRect.left;
+
+    if (rotateTriggerRect.left < left && left < rotateTriggerRect.right &&
+        rotateTriggerRect.top < top && top < rotateTriggerRect.bottom) {
+
+        if (!object.inTrigger) {
+            RotateShip(object);
+            object.inTrigger = true;
+        }
+    }
+    else {
+        object.inTrigger = false;
+    }
 }
 
 function RotateShip(object) {

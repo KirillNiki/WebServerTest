@@ -65,26 +65,30 @@ img {
 #importantButs {
     position: relative;
     width: 10%;
-    margin-left: 56%;
+    margin-left: 54%;
     margin-top: 2%;
 }
 
 .importantBut {
     border-radius: 100%;
     background-color: aqua;
-    width: 40%;
+    width: 25%;
     border: 0px;
-    /* margin-top: 0%; */
     position: absolute;
 }
 
-#start {
+#rotateTrigger {
+    background-color: aquamarine;
     margin-left: 5%;
 }
 
+#start {
+    margin-left: 35%;
+}
+
 #buttonInstall {
-    margin-left: 55%;
-    visibility: hidden;
+    margin-left: 65%;
+    /* visibility: hidden; */
 }
 
 #darker {
