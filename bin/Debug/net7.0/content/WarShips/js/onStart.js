@@ -160,6 +160,7 @@ function ShipsInit() {
         AllWarShips[i].style.top = AllShipStartPositions[i].top + `%`;
         AllWarShips[i].addEventListener('mousedown', OnMouseDown);
         AllWarShips[i].addEventListener('touchstart', OnMouseDown);
+        AllWarShips[i].addEventListener('touchstart', SetPreventDefault);
     }
 }
 
@@ -215,7 +216,7 @@ function Resize() {
     // let enemyField = document.getElementById(`enemyField`);
     // enemyField.style.marginTop = -enemyField.clientHeight + `px`;
 
-    let width = Field.clientWidth / 11;
+    let width = Field.clientWidth / 11; ``
     for (let i = 0; i < AllWarShips.length; i++) {
         AllWarShips[i].style.width = (width * AllWarShips[i].length) + `px`;
         AllWarShips[i].style.height = width + `px`;
@@ -256,7 +257,7 @@ function Resize() {
     var strLength = AllWarShips[0].style.height.length;
     var str = AllWarShips[0].style.height.substring(0, strLength - 2);
     var temp = parseFloat(str);
-    offset = Math.floor(temp / 3);
+    offset = Math.floor(temp / 2);
 
     var turn = document.getElementById(`turn`);
     turn.style.width = (width * 8) + `px`;
@@ -282,44 +283,41 @@ function OnMouseDown(event) {
         shipsCount--;
     }
 
+    var left = getCoords(object).left;
+    var top = getCoords(object).top;
+
     var body = document.getElementsByTagName(`body`);
     let main = document.getElementById(`main`);
     main.appendChild(object);
 
-    console.log(`${object.style.left} ${object.style.top}`);
-
-
-    object.style.left = getCoords(object).left - main.offsetLeft - body[0].offsetLeft + `px`;
-    object.style.top = getCoords(object).top - main.offsetTop - body[0].offsetTop + `px`;
-
-
-    console.log(`${object.style.left} ${object.style.top}`);
-
     object.style.position = 'absolute';
     object.style.zIndex = 1000;
+    object.style.left = left - main.offsetLeft - body[0].offsetLeft + `px`;
+    object.style.top = top - main.offsetTop - body[0].offsetTop + `px`;
 
     prevX = event.pageX - object.offsetLeft;
     prevY = event.pageY - object.offsetTop;
+    if (isNaN(prevX)) {
+        var touch = event.targetTouches[0];
+        prevX = touch.pageX - object.offsetLeft;
+        prevY = touch.pageY - object.offsetTop;
+    }
 
 
     document.onmousemove = function (event) {
-        Move(event);
+        Move(object, event);
         window.onkeydown = function (event) {
             if (event.key === `r` || event.key === `к`) RotateShip(object);
         };
     };
 
-    document.onmouseup = function () {
-        document.onmousemove = null;
-        document.onmouseup = null;
-        window.onkeydown = null;
-
-        EndMoving(object);
-    };
-
 
     document.ontouchmove = function (event) {
-        Move(event);
+        if (event.targetTouches.length === 1) {
+            var touch = event.targetTouches[0];
+
+            Move(object, touch);
+        }
     }
 
 
@@ -327,13 +325,31 @@ function OnMouseDown(event) {
         return false;
     };
 
-    function Move(event) {
-        object.style.left = event.pageX - prevX + `px`;
-        object.style.top = event.pageY - prevY + `px`;
+    document.onmouseup = function () {
+        document.onmousemove = null;
+        document.onmouseup = null;
+        window.onkeydown = null;
+        EndMoving(object);
+    };
+
+    document.ontouchend = function (event) {
+        document.ontouchmove = null;
+        document.ontouchend = null;
+        EndMoving(object);
     }
 }
 
 
+function SetPreventDefault(event) { event.preventDefault(); }
+
+function Move(object, event) {
+    console.log(object.style.left, ` `, object.style.top);
+    object.style.left = event.pageX - prevX + `px`;
+    object.style.top = event.pageY - prevY + `px`;
+    console.log(prevY, ` `, prevX);
+    console.log(event.pageY, ` `, event.pageX);
+    console.log(object.style.left, ` `, object.style.top);
+}
 
 function RotateShip(object) {
     object.rotation = object.rotation === 90 ? 0 : object.rotation + 90;
@@ -348,8 +364,6 @@ function RotateShip(object) {
     object.cellX = -1;
     object.cellY = -1;
 }
-
-
 
 function EndMoving(object) {
     PutShipIntoCell(object.id);
@@ -495,6 +509,7 @@ function StartEndGame(button) {
             for (let i = 0; i < AllWarShips.length; i++) {
                 AllWarShips[i].removeEventListener('mousedown', OnMouseDown);
                 AllWarShips[i].removeEventListener('touchstart', OnMouseDown);
+                AllWarShips[i].removeEventListener('touchstart', SetPreventDefault);
                 AllWarShips[i].style.zIndex = `1`;
             }
             isButtonPressed = true;
@@ -515,6 +530,7 @@ function StartEndGame(button) {
             for (let i = 0; i < AllWarShips.length; i++) {
                 AllWarShips[i].addEventListener('mousedown', OnMouseDown);
                 AllWarShips[i].addEventListener('touchstart', OnMouseDown);
+                AllWarShips[i].addEventListener('touchstart', SetPreventDefault);
 
                 var allShipsImg = document.getElementById(`allShipsImg`);
                 allShipsImg.appendChild(AllWarShips[i]);
