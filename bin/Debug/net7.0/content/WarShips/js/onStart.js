@@ -281,7 +281,9 @@ function OnMouseDown(event) {
 
     prevX = event.pageX - object.offsetLeft;
     prevY = event.pageY - object.offsetTop;
-    if (isNaN(prevX)) {
+    
+    // touchEvent doesn't have pageX, pageY props
+    if (isNaN(prevX)) { 
         var touch = event.targetTouches[0];
         prevX = touch.pageX - object.offsetLeft;
         prevY = touch.pageY - object.offsetTop;
@@ -303,7 +305,7 @@ function OnMouseDown(event) {
             Move(object, touch);
         }
     }
-    
+
     object.ondragstart = function () {
         return false;
     };
