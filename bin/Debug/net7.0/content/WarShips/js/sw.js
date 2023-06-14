@@ -18,6 +18,7 @@ const resorsesToCache = [
     '/sprites/oneBlockShip.png',
     '/sprites/threeBlockShip.png',
     '/sprites/twoBlockShip.png',
+    '/sprites/rotate.png',
 
     '/icons/logo-192.png',
     '/icons/logo-512.png',
