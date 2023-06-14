@@ -303,17 +303,9 @@ function OnMouseDown(event) {
             Move(object, touch);
         }
     }
-
-
+    
     object.ondragstart = function () {
         return false;
-    };
-
-    document.onmouseup = function () {
-        document.onmousemove = null;
-        document.onmouseup = null;
-        window.onkeydown = null;
-        EndMoving(object);
     };
 
     document.ontouchend = function () {
@@ -321,18 +313,21 @@ function OnMouseDown(event) {
         document.ontouchend = null;
         EndMoving(object);
     }
+
+    document.onmouseup = function () {
+        document.onmousemove = null;
+        document.onmouseup = null;
+        window.onkeydown = null;
+        EndMoving(object);
+    };
 }
 
 
 function SetPreventDefault(event) { event.preventDefault(); }
 
 function Move(object, event) {
-    console.log(object.style.left, ` `, object.style.top);
     object.style.left = event.pageX - prevX + `px`;
     object.style.top = event.pageY - prevY + `px`;
-    console.log(prevY, ` `, prevX);
-    console.log(event.pageY, ` `, event.pageX);
-    console.log(object.style.left, ` `, object.style.top);
 }
 
 function RotateShip(object) {
