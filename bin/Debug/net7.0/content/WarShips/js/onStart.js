@@ -281,9 +281,9 @@ function OnMouseDown(event) {
 
     prevX = event.pageX - object.offsetLeft;
     prevY = event.pageY - object.offsetTop;
-    
+
     // touchEvent doesn't have pageX, pageY props
-    if (isNaN(prevX)) { 
+    if (isNaN(prevX)) {
         var touch = event.targetTouches[0];
         prevX = touch.pageX - object.offsetLeft;
         prevY = touch.pageY - object.offsetTop;
@@ -313,10 +313,17 @@ function OnMouseDown(event) {
     document.ontouchend = function () {
         document.ontouchmove = null;
         document.ontouchend = null;
+
+        document.onmouseup = null;
+        document.onmousemove = null;
+        window.onkeydown = null;
         EndMoving(object);
     }
 
     document.onmouseup = function () {
+        document.ontouchmove = null;
+        document.ontouchend = null;
+
         document.onmousemove = null;
         document.onmouseup = null;
         window.onkeydown = null;
@@ -403,6 +410,8 @@ function PutShipIntoCell(id) {
                         object.cellY = AllMyCells[i].y;
                         ShipAndMatrix(object, States.busy);
                         shipsCount++;
+                        console.log(shipsCount);
+
                         isPuted = true;
                     }
                 }
