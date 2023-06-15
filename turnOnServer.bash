@@ -1,1 +1,1 @@
-ssh entcor@192.168.2.81 "cd && cd server/WebServerTest && dotnet run"
+ssh entcor@192.168.2.81 "cd && cd server/WebServerTest && nohup dotnet run && exit"
