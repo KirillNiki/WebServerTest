@@ -181,17 +181,24 @@ function Resize() {
     var flexContainer = document.getElementById(`flexContainer`);
     var importantButtons = document.getElementById('importantButs');
     var flexOrientation = getComputedStyle(flexContainer).getPropertyValue(`--flex-orientation`).toString();
+    var fields = flexContainer.children;
 
+    var fieldsHeight;
     if (flexOrientation === `0` || flexOrientation === ` 0`) {
         flexContainer.style.height = flexContainer.clientWidth / 2 + `px`;
         importantButtons.style.width = `15%`;
+        fieldsHeight = 100;
     }
     else if (flexOrientation === `1` || flexOrientation === ` 1`) {
         flexContainer.style.height = flexContainer.clientWidth * 2 + `px`;
         importantButtons.style.width = `40%`;
         importantButtons.style.marginLeft = `42%`;
+        fieldsHeight = 50;
     }
     importantButtons.style.height = (importantButtons.clientWidth / 2) + `px`;
+    for (let i = 0; i < fields.length; i++) {
+        fields[i].style.height = fieldsHeight + `%`;
+    }
 
 
     var allShipsImg = document.getElementById(`allShipsImg`);

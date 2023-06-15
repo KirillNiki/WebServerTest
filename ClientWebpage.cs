@@ -81,6 +81,7 @@ class GetWebPage
     public async void SendError(int code)
     {
         string html = $"<html><head><title></title></head><body><h1>Error {code}</h1></body></html>";
+        
         byte[] data = Encoding.UTF8.GetBytes(html);
 
         response.ContentLength64 = data.Length;
