@@ -11,6 +11,7 @@ const resorsesToCache = [
     '/js/play.js',
     '/js/swRegister.js',
     '/js/installPWA.js',
+    '/js/iosInstallSup.js',
 
     '/sprites/fourBlockShip.png',
     '/sprites/got.png',
